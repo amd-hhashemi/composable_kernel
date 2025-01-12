@@ -33,20 +33,20 @@ struct fmoe_ // traits, ugly name, only used for internal
     using YSmoothScaleDataType = ck_tile::remove_cvref_t<typename TypeConfig::YSmoothScaleDataType>;
     using TopkWeightDataType   = ck_tile::remove_cvref_t<typename TypeConfig::TopkWeightDataType>;
     using IndexDataType        = ck_tile::remove_cvref_t<typename TypeConfig::IndexDataType>;
-
+// S<32, 1024, 128, 128>, S<1, 4, 1>, S<16, 16, 32>
     static constexpr ck_tile::index_t BT_ = BlockTIle_::at(ck_tile::number<0>{}); // block token
     static constexpr ck_tile::index_t BI_ =
         BlockTIle_::at(ck_tile::number<1>{}); // block intermediate
     static constexpr ck_tile::index_t BH_ = BlockTIle_::at(ck_tile::number<2>{}); // block hidden
     static constexpr ck_tile::index_t BD_ = BlockTIle_::at(ck_tile::number<3>{}); // block down
 
-    using BlockTile_0    = ck_tile::sequence<BT_, BI_ / (GateOnly_ ? 1 : 2), BH_>;
-    using WarpPerBlock_0 = ck_tile::remove_cvref_t<WarpPerBlock_>;
-    using WarpTile_0     = ck_tile::remove_cvref_t<WarpTile_>;
+    using BlockTile_0    = ck_tile::sequence<BT_, BI_ / (GateOnly_ ? 1 : 2), BH_>; //32, 512, 128
+    using WarpPerBlock_0 = ck_tile::remove_cvref_t<WarpPerBlock_>; // S<1, 4, 1>
+    using WarpTile_0     = ck_tile::remove_cvref_t<WarpTile_>;  // S<16, 16, 32>
 
-    using BlockTile_1    = ck_tile::sequence<BT_, BD_, BI_ / (GateOnly_ ? 1 : 2)>;
-    using WarpPerBlock_1 = ck_tile::remove_cvref_t<WarpPerBlock_>;
-    using WarpTile_1     = ck_tile::remove_cvref_t<WarpTile_>;
+    using BlockTile_1    = ck_tile::sequence<BT_, BD_, BI_ / (GateOnly_ ? 1 : 2)>;  // 32, 128, 512
+    using WarpPerBlock_1 = ck_tile::remove_cvref_t<WarpPerBlock_>; /// S<1, 4, 1> 
+    using WarpTile_1     = ck_tile::remove_cvref_t<WarpTile_>; // S<16, 16, 32>
 
     static constexpr ck_tile::index_t GateOnly   = GateOnly_;
     static constexpr ck_tile::index_t FusedQuant = FusedQuant_;

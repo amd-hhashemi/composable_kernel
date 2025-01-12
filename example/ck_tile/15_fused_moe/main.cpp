@@ -285,7 +285,10 @@ bool run(const ck_tile::ArgParser& arg_parser)
     }
     else
     {
-        topid_unique_gen<IndexDataType>(topk_ids_host.mData, tokens, topk, experts, 11913);
+        for(int i = 0; i < static_cast<int>(topk_ids_host.mData.size()); i++) {
+            topk_ids_host.mData[i] = i % 4;
+        }
+        // topid_unique_gen<IndexDataType>(topk_ids_host.mData, tokens, topk, experts, 11913);
     }
 
 // leave it here for future debug purpose
@@ -441,6 +444,10 @@ bool run(const ck_tile::ArgParser& arg_parser)
                 shared_intermediate_size_0,
                 topk,
                 gate_only);
+
+            sorted_token_ids_host.savetxt("sorted_token_ids_host.txt", "int");
+            sorted_expert_ids_host.savetxt("sorted_expert_ids_host.txt", "int");
+            num_sorted_tiles_host.savetxt("num_sorted_tiles_host.txt", "int");
 
             auto o_dev = o_buf.ToHost<ODataType>();
             // o_dev.savetxt("gpu-out.txt", "float");

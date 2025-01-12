@@ -199,6 +199,8 @@ struct FusedMoeGemmPipeline_FlatmmUk
                        threadIdx.x % (BlockShape::Block_K0 / kAlignmentA) * kAlignmentA;
             },
             number<row_ids_a.size()>{});
+        if (row_ids_a[0] >= kargs.num_tokens)
+            return;
         auto a_res =
             make_wave_buffer_resource(reinterpret_cast<const ADataType*>(kargs.a_ptr),
                                       kargs.num_tokens * kargs.stride_token * sizeof(ADataType));
@@ -238,7 +240,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
 
             const auto d_view_ = make_naive_tensor_view<address_space_enum::global>(
                 d_ptr,
-                make_tuple(nr_1, kr_1, BlockShape::Block_W1),
+                make_tuple(nr_1, kr_1, BlockShape::Block_W1),  // n/16, k/32, 512
                 make_tuple(kr_1 * BlockShape::Block_W1, BlockShape::Block_W1, 1),
                 number<kAlignmentD>{},
                 number<1>{});
@@ -264,13 +266,13 @@ struct FusedMoeGemmPipeline_FlatmmUk
         auto d_coords = [&]() {
             constexpr index_t Nr_          = 2;
             constexpr index_t Nw_          = 4;
-            constexpr index_t Kr0_         = 4;
+            constexpr index_t Kr0_         = BlockShape::Block_Kr1 / Kr1_; //4
             constexpr index_t Kr1_         = 4;
             constexpr index_t Kl_          = 4;
             constexpr index_t Nl_          = 16;
             constexpr index_t Kv_          = 8;
-            constexpr index_t W_           = Kl_ * Nl_ * Kv_;
-            constexpr index_t num_offsets_ = Nr_ * Kr0_;
+            constexpr index_t W_           = Kl_ * Nl_ * Kv_;  // 512
+            constexpr index_t num_offsets_ = Nr_ * Kr0_;  // 8
             index_t base_os_               = (threadIdx.x % 64) * Kv_ + (threadIdx.x / 64) *
                                                               shared_intermediate_size_1 *
                                                               Nl_; // Kr0_ * Kr1_ * W_;
