@@ -33,7 +33,7 @@ struct FlatmmSn_32x128x512_1x4x1_16x16x32_Base
     // TODO: note Nr/Kr/W need consider KPack
     static constexpr index_t Block_W  = Warp_N * Warp_K;  // 512 element
     static constexpr index_t Block_Nr = Block_N / Warp_N; // 32 element, 4 per wave
-    static constexpr index_t Block_Kr = Block_K / Warp_K; // 4
+    static constexpr index_t Block_Kr = Block_K / Warp_K; // 16
 
     static constexpr index_t Repeat_M = Block_M / (Warp_M * WarpPerBlock_M); // 2
     static constexpr index_t Repeat_N = Block_N / (Warp_N * WarpPerBlock_N); // 2

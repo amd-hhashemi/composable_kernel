@@ -807,16 +807,16 @@ struct FusedMoeGemmPipelineFlatmmPolicy
         else if constexpr(std::is_same_v<typename Problem::ADataType, ck_tile::bf16_t> &&
                      std::is_same_v<typename Problem::GDataType, ck_tile::bf16_t> &&
                      S_::Block_M0 == 32 && S_::Block_N0 == 256 && S_::Block_K0 == 128 &&
-                     S_::Warp_M0 == 16 && S_::Warp_N0 == 16 && S_::Warp_K0 == 32)
+                     S_::Warp_M0 == 16 && S_::Warp_N0 == 16 && S_::Warp_K0 == 32 && !Problem::Traits::IsGateOnly)
         {
-            return Flatmm_32x256x128_1x4x1_16x16x32_BF16{};
+            return Flatmm_32x512x128_1x4x1_16x16x32_BF16{};
         }
         else if constexpr(std::is_same_v<typename Problem::ADataType, ck_tile::fp16_t> &&
                           std::is_same_v<typename Problem::GDataType, ck_tile::fp16_t> &&
                           S_::Block_M0 == 32 && S_::Block_N0 == 256 && S_::Block_K0 == 128 &&
-                          S_::Warp_M0 == 16 && S_::Warp_N0 == 16 && S_::Warp_K0 == 32)
+                          S_::Warp_M0 == 16 && S_::Warp_N0 == 16 && S_::Warp_K0 == 32 && !Problem::Traits::IsGateOnly)
         {
-            return Flatmm_32x256x128_1x4x1_16x16x32_FP16{};
+            return Flatmm_32x512x128_1x4x1_16x16x32_FP16{};
         } 
     }
 

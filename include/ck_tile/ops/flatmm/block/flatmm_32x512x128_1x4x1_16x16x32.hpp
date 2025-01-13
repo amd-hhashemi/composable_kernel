@@ -57,7 +57,7 @@ struct Flatmm_32x512x128_1x4x1_16x16x32_Base // for f16/bf16
     // TODO: note Nr/Kr/W need consider SubKPacks
     static constexpr index_t Block_W  = Warp_N * Warp_K;  // 512 element
     static constexpr index_t Block_Nr = Block_N / Warp_N; // 32 element, 4 per wave
-    static constexpr index_t Block_Kr = Block_K / Warp_K; // 4
+    static constexpr index_t Block_Kr = Block_K / Warp_K; // 16
 
     static constexpr index_t Repeat_M = Block_M / (Warp_M * WarpPerBlock_M); // 2
     static constexpr index_t Repeat_N = Block_N / (Warp_N * WarpPerBlock_N); // 8
@@ -85,6 +85,32 @@ struct Flatmm_32x512x128_1x4x1_16x16x32_Base // for f16/bf16
     {
         using CDataType             = float;
         constexpr auto c_block_dstr = MakeCBlockDist();
+        auto c_block_tensor         = make_static_distributed_tensor<CDataType>(c_block_dstr);
+        return c_block_tensor;
+    }
+
+    static CK_TILE_DEVICE constexpr auto MakeCBlockDistGUMerge()
+    {
+        constexpr auto c_block_outer_dstr_encoding = tile_distribution_encoding<
+            sequence<>,
+            tuple<sequence<Repeat_M, WarpPerBlock_M>, sequence<Repeat_N / 2, WarpPerBlock_N>>,
+            tuple<sequence<1, 2>>,
+            tuple<sequence<1, 1>>,
+            sequence<2, 1>, // !! note here is different
+            sequence<0, 0>>{};
+
+        using WG = WarpGemmMfmaF16F16F32M16N16K32TransposedCDistribution;
+
+        constexpr auto c_block_dstr_encode = detail::make_embed_tile_distribution_encoding(
+            c_block_outer_dstr_encoding, typename WG::CWarpDstrEncoding{});
+        constexpr auto c_block_dstr = make_static_tile_distribution(c_block_dstr_encode);
+        return c_block_dstr;
+    }
+
+    static CK_TILE_DEVICE constexpr auto MakeCBlockTileGUMerge()
+    {
+        using CDataType             = float;
+        constexpr auto c_block_dstr = MakeCBlockDistGUMerge();
         auto c_block_tensor         = make_static_distributed_tensor<CDataType>(c_block_dstr);
         return c_block_tensor;
     }

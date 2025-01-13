@@ -199,8 +199,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
                        threadIdx.x % (BlockShape::Block_K0 / kAlignmentA) * kAlignmentA;
             },
             number<row_ids_a.size()>{});
-        if (row_ids_a[0] >= kargs.num_tokens)
-            return;
+
         auto a_res =
             make_wave_buffer_resource(reinterpret_cast<const ADataType*>(kargs.a_ptr),
                                       kargs.num_tokens * kargs.stride_token * sizeof(ADataType));
@@ -266,8 +265,8 @@ struct FusedMoeGemmPipeline_FlatmmUk
         auto d_coords = [&]() {
             constexpr index_t Nr_          = 2;
             constexpr index_t Nw_          = 4;
-            constexpr index_t Kr0_         = BlockShape::Block_Kr1 / Kr1_; //4
             constexpr index_t Kr1_         = 4;
+            constexpr index_t Kr0_         = BlockShape::Block_Kr1 / Kr1_; //4
             constexpr index_t Kl_          = 4;
             constexpr index_t Nl_          = 16;
             constexpr index_t Kv_          = 8;
@@ -300,7 +299,9 @@ struct FusedMoeGemmPipeline_FlatmmUk
 
         auto bridge_sst_win = [&]() {
             constexpr auto desc_ = Policy::template MakeBridgeLdsStoreForUKDesc<Problem>();
-            constexpr auto dist_ = Policy::template GetUK_0<Problem>().MakeCBlockDist();
+            constexpr auto dist_ = Policy::template GetUK_0<Problem>().MakeCBlockDistGUMerge();
+            // constexpr auto dist_ = IsGateOnly ? Policy::template GetUK_0<Problem>().MakeCBlockDist()
+            //                                   : Policy::template GetUK_0<Problem>().MakeCBlockDistGUMerge();
             return make_tile_window_linear(make_tensor_view<address_space_enum::lds>(
                                                reinterpret_cast<YDataType*>(smem), desc_),
                                            desc_.get_lengths(),
@@ -315,11 +316,11 @@ struct FusedMoeGemmPipeline_FlatmmUk
         auto w_scale      = GetWeightScale(
             row_coords_o, reinterpret_cast<const TopkWeightDataType*>(kargs.sorted_weight_ptr));
 
-        if (row_ids_a[0] >= kargs.num_tokens)
-            return;
+        // if (row_ids_a[0] >= kargs.num_tokens)
+        //     return;
 
         auto uk_0_g = Policy::template GetUK_0<Problem>();
-        auto acc_0  = uk_0_g(a_res,
+        auto acc_0_full  = uk_0_g(a_res,
                             a_coords,
                             g_res,
                             g_coords,
@@ -328,7 +329,13 @@ struct FusedMoeGemmPipeline_FlatmmUk
                             BlockShape::Block_K0, // tile offset for B matrix each unroll
                             BlockShape::Block_Kr0 *
                             BlockShape::Block_W0); // tile offset for B matrix each unroll
-
+        // auto acc_0 = IsGateOnly ? acc_0_full : Policy::template GetUK_0<Problem>().MakeCBlockTileGUMerge();
+        auto acc_0 = Policy::template GetUK_0<Problem>().MakeCBlockTileGUMerge();
+        if (!IsGateOnly) {
+            sweep_tile(acc_0, [&](auto idx0) { 
+                    acc_0(idx0) = acc_0_full(idx0); 
+            });
+        }
         // fast GeLu
         if constexpr(std::is_same_v<typename Problem::GateActivation,
                                     ck_tile::element_wise::FastGeluAsm>)
@@ -350,37 +357,18 @@ struct FusedMoeGemmPipeline_FlatmmUk
                 [&](auto idx0) { typename Problem::GateActivation{}(acc_0(idx0), acc_0(idx0)); },
                 sequence<1, 1>{});
         }
+        
+        if (!IsGateOnly) {
+            for(auto i = 0; i < BlockShape::Repeat_N0; i++)
+            {
+                acc_0.get_thread_buffer()[4 * i + 0] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 0];
+                acc_0.get_thread_buffer()[4 * i + 1] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 1];
+                acc_0.get_thread_buffer()[4 * i + 2] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 2];
+                acc_0.get_thread_buffer()[4 * i + 3] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 3];
+            }
+        }
         auto y_pre = acc_0;
         block_sync_lds();
-
-        // up
-        // if(!IsGateOnly)
-        // {
-        //     // up ptr. add hafl expoert_stride_0 as offset.
-        //     auto u_win = gu_win_gen(shared_intermediate_size_0 * kargs.hidden_size);
-        //     auto u_res = u_win.get_bottom_tensor_view().get_buffer_view().cached_buf_res_;
-        //     auto u_coords =
-        //         generate_tuple([&](auto i) { return u_win.cached_coords_[i].get_offset(); },
-        //                        number<decltype(u_win)::NumAccess_NonLinear>{});
-        //     // reuse UK0
-        //     auto uk_0_u  = Policy::template GetUK_0<Problem>();
-        //     auto acc_0_u = uk_0_u(a_res,
-        //                           a_coords,
-        //                           u_res,
-        //                           u_coords,
-        //                           smem,
-        //                           kargs.hidden_size,
-        //                           BlockShape::Block_K0, // tile offset for B matrix each unroll
-        //                           BlockShape::Block_Kr0 *
-        //                               BlockShape::Block_W0); // tile offset for B matrix each unroll
-        //     // elementwise mul gate*up.
-        //     sweep_tile(
-        //         y_pre,
-        //         [&](auto idx0) { y_pre(idx0) = y_pre(idx0) * acc_0_u(idx0); },
-        //         sequence<1, 1>{});
-        //     block_sync_lds();
-        // }
-
         store_tile(bridge_sst_win, cast_tile<YDataType>(y_pre));
         block_sync_lds();
 

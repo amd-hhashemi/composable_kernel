@@ -304,7 +304,7 @@ bool run(const ck_tile::ArgParser& arg_parser)
     }
 
     // permute weight
-    ck_tile::HostTensor<GDataType> g_perm_host = shuffle_moe_weight(g_host, prec_w, 1);
+    ck_tile::HostTensor<GDataType> g_perm_host = gate_only? shuffle_moe_weight(g_host, prec_w, 1) : shuffle_moe_weight_gateup(g_host, prec_w, 1);
     ck_tile::HostTensor<DDataType> d_perm_host = shuffle_moe_weight(d_host, prec_w, 1);
 
     // do moe sorting

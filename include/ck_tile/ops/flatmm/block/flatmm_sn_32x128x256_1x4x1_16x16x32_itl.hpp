@@ -6,7 +6,7 @@
 #include "ck_tile/core.hpp"
 #include "ck_tile/ops/gemm/warp/warp_gemm.hpp"
 #include "ck_tile/ops/flatmm/block/flatmm_uk_config.hpp"
-#include "ck_tile/ops/flatmm/block/flatmm_sn_32x128x512_1x4x1_16x16x32.hpp"
+#include "ck_tile/ops/flatmm/block/flatmm_sn_32x128x256_1x4x1_16x16x32.hpp"
 
 namespace ck_tile {
 
@@ -14,7 +14,7 @@ namespace ck_tile {
 // A in smem, B load from global
 // require 4 wave, occupancy=1c
 
-struct FlatmmSn_32x128x512_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x512_1x4x1_16x16x32_Base
+struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_1x4x1_16x16x32_Base
 {
     using BDataType = bf16_t;
     using ODataType = bf16_t;
@@ -118,7 +118,7 @@ struct FlatmmSn_32x128x512_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x512_
 #pragma clang diagnostic ignored "-Winline-asm"
         asm volatile(
 #define CK_TILE_FLATMM_UK_MFMA CK_TILE_FLATMM_UK_MFMA_BF16
-#include "uk/flatmm_sn_uk_gfx9_32x128x512_1x4x1_16x16x16_itl.inc"
+#include "uk/flatmm_sn_uk_gfx9_32x128x256_1x4x1_16x16x16_itl.inc"
 #undef CK_TILE_FLATMM_UK_MFMA
             :[smem_]"+r"(smem),
             // [s_loop_cnt]"+s"(loop_cnt),
@@ -181,10 +181,10 @@ struct FlatmmSn_32x128x512_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x512_
                 [v_os_b1]"v"(static_cast<index_t>(cached_coords_b[number<1>{}] * sizeof(BDataType))),
                 [v_os_b2]"v"(static_cast<index_t>(cached_coords_b[number<2>{}] * sizeof(BDataType))),
                 [v_os_b3]"v"(static_cast<index_t>(cached_coords_b[number<3>{}] * sizeof(BDataType))),
-                [v_os_b4]"v"(static_cast<index_t>(cached_coords_b[number<4>{}] * sizeof(BDataType))),
-                [v_os_b5]"v"(static_cast<index_t>(cached_coords_b[number<5>{}] * sizeof(BDataType))),
-                [v_os_b6]"v"(static_cast<index_t>(cached_coords_b[number<6>{}] * sizeof(BDataType))),
-                [v_os_b7]"v"(static_cast<index_t>(cached_coords_b[number<7>{}] * sizeof(BDataType))),
+                // [v_os_b4]"v"(static_cast<index_t>(cached_coords_b[number<4>{}] * sizeof(BDataType))),
+                // [v_os_b5]"v"(static_cast<index_t>(cached_coords_b[number<5>{}] * sizeof(BDataType))),
+                // [v_os_b6]"v"(static_cast<index_t>(cached_coords_b[number<6>{}] * sizeof(BDataType))),
+                // [v_os_b7]"v"(static_cast<index_t>(cached_coords_b[number<7>{}] * sizeof(BDataType))),
 
                 [s_tile_os_o]"s"(tile_stride_o_bytes),
                 [s_tile_os_b]"s"(tile_stride_b_bytes),
@@ -262,7 +262,7 @@ struct FlatmmSn_32x128x512_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x512_
     }
 };
 
-struct FlatmmSn_32x128x512_1x4x1_16x16x32_FP16_itl : public FlatmmSn_32x128x512_1x4x1_16x16x32_Base
+struct FlatmmSn_32x128x256_1x4x1_16x16x32_FP16_itl : public FlatmmSn_32x128x256_1x4x1_16x16x32_Base
 {
     using BDataType = bf16_t;
     using ODataType = bf16_t;
@@ -288,7 +288,7 @@ struct FlatmmSn_32x128x512_1x4x1_16x16x32_FP16_itl : public FlatmmSn_32x128x512_
                index_t tile_offset_b, // stride b is fixed to blockKr * blockW, but still can adjust
                index_t tile_offset_o)
     {
-        static_assert(BCoords::size() == 8); // 8
+        static_assert(BCoords::size() == 4); // 8
         static_assert(OCoords::size() == 8);
 
         const index_t tile_stride_b_bytes = tile_offset_b * sizeof(BDataType);
@@ -365,7 +365,7 @@ struct FlatmmSn_32x128x512_1x4x1_16x16x32_FP16_itl : public FlatmmSn_32x128x512_
 #pragma clang diagnostic ignored "-Winline-asm"
         asm volatile(
 #define CK_TILE_FLATMM_UK_MFMA CK_TILE_FLATMM_UK_MFMA_FP16
-#include "uk/flatmm_sn_uk_gfx9_32x128x512_1x4x1_16x16x16_itl.inc"
+#include "uk/flatmm_sn_uk_gfx9_32x128x256_1x4x1_16x16x16_itl.inc"
 #undef CK_TILE_FLATMM_UK_MFMA
             :[smem_]"+r"(smem),
             [s_loop_cnt]"+s"(n),
