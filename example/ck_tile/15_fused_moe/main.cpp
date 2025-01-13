@@ -302,6 +302,17 @@ bool run(const ck_tile::ArgParser& arg_parser)
         ck_tile::FillNormalDistribution<YSmoothScaleDataType>{0.f, 1.f, seed, true}(sy_host);
         ck_tile::FillNormalDistribution<TopkWeightDataType>{0.f, 1.f, seed, true}(topk_weight_host);
     }
+    else if(init == 3)
+    {
+        ck_tile::FillConstant<ADataType>{}(a_host);
+        ck_tile::FillConstant<GDataType>{}(g_host);
+        ck_tile::FillConstant<DDataType>{}(d_host);
+        ck_tile::FillConstant<AScaleDataType>{}(sa_host);
+        ck_tile::FillConstant<GScaleDataType>{}(sg_host);
+        ck_tile::FillConstant<DScaleDataType>{}(sd_host);
+        ck_tile::FillConstant<YSmoothScaleDataType>{}(sy_host);
+        ck_tile::FillConstant<TopkWeightDataType>{}(topk_weight_host);
+    }
 
     // permute weight
     ck_tile::HostTensor<GDataType> g_perm_host = gate_only? shuffle_moe_weight(g_host, prec_w, 1) : shuffle_moe_weight_gateup(g_host, prec_w, 1);
@@ -322,7 +333,7 @@ bool run(const ck_tile::ArgParser& arg_parser)
     else
     {
         for(int i = 0; i < static_cast<int>(topk_ids_host.mData.size()); i++) {
-            topk_ids_host.mData[i] = i % 4;
+            topk_ids_host.mData[i] = 0;
         }
         // topid_unique_gen<IndexDataType>(topk_ids_host.mData, tokens, topk, experts, 11913);
     }
@@ -486,7 +497,7 @@ bool run(const ck_tile::ArgParser& arg_parser)
             num_sorted_tiles_host.savetxt("num_sorted_tiles_host.txt", "int");
 
             auto o_dev = o_buf.ToHost<ODataType>();
-            // o_dev.savetxt("gpu-out.txt", "float");
+            o_dev.savetxt("gpu-out.txt", "float");
             auto [rtol, atol] = get_elimit<ADataType>();
             pass &= ck_tile::check_err(
                 o_dev, o_host, std::string("OUT Error: Incorrect results!"), rtol, atol);
@@ -595,7 +606,7 @@ bool run(const ck_tile::ArgParser& arg_parser)
                 gate_only);
 
             auto o_dev = o_buf.ToHost<ODataType>();
-            // o_dev.savetxt("gpu-out.txt", "float");
+            o_dev.savetxt("gpu-out.txt", "float");
             auto [rtol, atol] = get_elimit<ADataType>();
             pass &= ck_tile::check_err(
                 o_dev, o_host, std::string("OUT Error: Incorrect results!"), rtol, atol);

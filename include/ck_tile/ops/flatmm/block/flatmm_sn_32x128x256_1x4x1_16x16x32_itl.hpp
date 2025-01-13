@@ -85,6 +85,14 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
         register float v_c29 asm("v93");
         register float v_c30 asm("v94");
         register float v_c31 asm("v95");
+        register bf16x2_t v_debug asm("v160");
+        register bf16x2_t v_debug1 asm("v161");
+        register bf16x2_t v_debug2 asm("v162");
+        register bf16x2_t v_debug3 asm("v163");
+        register bf16x2_t v_debug4 asm("v164");
+        register bf16x2_t v_debug5 asm("v165");
+        register bf16x2_t v_debug6 asm("v166");
+        register bf16x2_t v_debug7 asm("v167");
         int32_t nan_hi = 0x7fff0000;
         int32_t nan_lo = 0x00007fff;
 
@@ -154,7 +162,15 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
                 [c28]"+v"(v_c28),
                 [c29]"+v"(v_c29),
                 [c30]"+v"(v_c30),
-                [c31]"+v"(v_c31)
+                [c31]"+v"(v_c31),
+                [debug0]"+v"(v_debug),
+                [debug1]"+v"(v_debug1),
+                [debug2]"+v"(v_debug2),
+                [debug3]"+v"(v_debug3),
+                [debug4]"+v"(v_debug4),
+                [debug5]"+v"(v_debug5),
+                [debug6]"+v"(v_debug6),
+                [debug7]"+v"(v_debug7)
             :
             [sld_a_base]"n"(0),
             [shfl_base]"n"(0),
@@ -259,6 +275,14 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
         );
 #pragma clang diagnostic pop
         // clang-format on
+        if(1) {
+            printf("\n%d %.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", 
+                threadIdx.x,
+                type_convert<float>(v_debug.x), type_convert<float>(v_debug.y), 
+                type_convert<float>(v_debug1.x), type_convert<float>(v_debug1.y), 
+                type_convert<float>(v_debug2.x), type_convert<float>(v_debug2.y), 
+                type_convert<float>(v_debug3.x), type_convert<float>(v_debug3.y));
+        }
     }
 };
 

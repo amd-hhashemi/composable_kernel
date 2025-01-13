@@ -111,6 +111,7 @@
     " ds_write_b64 %[v_sfl_sst], [%[c6],%[c7]] offset:23168  \n"
     " s_mov_b32 s80, 0 \n"
     " s_waitcnt vmcnt(8) \n"
+    " s_waitcnt vmcnt(0) & lgkmcnt(0)  \n"
     "coreloop_top_%=: \n"
     " s_waitcnt vmcnt(0) & lgkmcnt(0)  \n"
     " s_barrier \n" _UK_MFMA_ " [%[c0], %[c1], %[c2], %[c3]], acc[0:1], v[128:129], 0  \n"

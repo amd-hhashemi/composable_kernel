@@ -19,7 +19,7 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_Base
     static constexpr index_t Block_K = 256;
 
     static constexpr index_t WarpPerBlock_M = 1;
-    static constexpr index_t WarpPerBlock_N = 4;
+    static constexpr index_t WarpPerBlock_N = 4;    
     static constexpr index_t WarpPerBlock_K = 1;
 
     static constexpr index_t Warp_M = 16;

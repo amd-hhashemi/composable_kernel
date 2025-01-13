@@ -74,7 +74,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
         constexpr index_t smem_1 = Policy::template GetUK_1<Problem>().GetSmemSize();
         constexpr index_t smem_bridge =
             BlockShape::Block_M0 * BlockShape::Block_N0;
-        return max(smem_0, max(smem_1, smem_bridge));
+        return 32768;//max(smem_0, max(smem_1, smem_bridge));
     }
 
     // this is the thread-offset along row/col
@@ -329,8 +329,15 @@ struct FusedMoeGemmPipeline_FlatmmUk
                             BlockShape::Block_K0, // tile offset for B matrix each unroll
                             BlockShape::Block_Kr0 *
                             BlockShape::Block_W0); // tile offset for B matrix each unroll
+        // for(auto i = 0; i < 8; i++)
+        // {
+        //     if(threadIdx.x==0) {
+        //         printf("%d, %.1f, %.1f, %.1f, %.1f\n",i, acc_0_full.get_thread_buffer()[4 * (i) + 0], acc_0_full.get_thread_buffer()[4 * (i) + 1], acc_0_full.get_thread_buffer()[4 * (i) + 2], acc_0_full.get_thread_buffer()[4 * (i) + 3]);
+        //     }
+        // }
         // auto acc_0 = IsGateOnly ? acc_0_full : Policy::template GetUK_0<Problem>().MakeCBlockTileGUMerge();
         auto acc_0 = Policy::template GetUK_0<Problem>().MakeCBlockTileGUMerge();
+    
         if (!IsGateOnly) {
             sweep_tile(acc_0, [&](auto idx0) { 
                     acc_0(idx0) = acc_0_full(idx0); 
@@ -359,7 +366,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
         }
         
         if (!IsGateOnly) {
-            for(auto i = 0; i < BlockShape::Repeat_N0; i++)
+            for(auto i = 0; i < BlockShape::Repeat_N0 * BlockShape::Repeat_M0; i++)
             {
                 acc_0.get_thread_buffer()[4 * i + 0] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 0];
                 acc_0.get_thread_buffer()[4 * i + 1] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 1];
@@ -367,10 +374,15 @@ struct FusedMoeGemmPipeline_FlatmmUk
                 acc_0.get_thread_buffer()[4 * i + 3] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 3];
             }
         }
-        auto y_pre = acc_0;
         block_sync_lds();
-        store_tile(bridge_sst_win, cast_tile<YDataType>(y_pre));
+        store_tile(bridge_sst_win, cast_tile<YDataType>(acc_0));
         block_sync_lds();
+        // YDataType *smemy = reinterpret_cast<YDataType *>(smem);
+        // if(threadIdx.x==0) {
+        // for (int i = 0; i<32 * 256; i++) {
+        //     printf("%.1f,", type_convert<float>(smemy[i]));
+        // }}
+        // block_sync_lds();
 
         auto uk_1 = Policy::template GetUK_1<Problem>();
         uk_1(d_res,
