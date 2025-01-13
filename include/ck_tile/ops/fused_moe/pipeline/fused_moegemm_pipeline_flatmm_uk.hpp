@@ -70,10 +70,10 @@ struct FusedMoeGemmPipeline_FlatmmUk
 
     CK_TILE_HOST_DEVICE static constexpr ck_tile::index_t GetSmemSize()
     {
-        constexpr index_t smem_0 = Policy::template GetUK_0<Problem>().GetSmemSize();
-        constexpr index_t smem_1 = Policy::template GetUK_1<Problem>().GetSmemSize();
-        constexpr index_t smem_bridge =
-            BlockShape::Block_M0 * BlockShape::Block_N0;
+        // constexpr index_t smem_0 = Policy::template GetUK_0<Problem>().GetSmemSize();
+        // constexpr index_t smem_1 = Policy::template GetUK_1<Problem>().GetSmemSize();
+        // constexpr index_t smem_bridge =
+        //     BlockShape::Block_M0 * BlockShape::Block_N0;
         return 32768;//max(smem_0, max(smem_1, smem_bridge));
     }
 
@@ -329,7 +329,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
                             BlockShape::Block_K0, // tile offset for B matrix each unroll
                             BlockShape::Block_Kr0 *
                             BlockShape::Block_W0); // tile offset for B matrix each unroll
-        // for(auto i = 0; i < 8; i++)
+        // for(auto i = 0; i < 16; i++)
         // {
         //     if(threadIdx.x==0) {
         //         printf("%d, %.1f, %.1f, %.1f, %.1f\n",i, acc_0_full.get_thread_buffer()[4 * (i) + 0], acc_0_full.get_thread_buffer()[4 * (i) + 1], acc_0_full.get_thread_buffer()[4 * (i) + 2], acc_0_full.get_thread_buffer()[4 * (i) + 3]);
@@ -366,12 +366,13 @@ struct FusedMoeGemmPipeline_FlatmmUk
         }
         
         if (!IsGateOnly) {
-            for(auto i = 0; i < BlockShape::Repeat_N0 * BlockShape::Repeat_M0; i++)
+            constexpr auto REPEATS = BlockShape::Repeat_N0 * BlockShape::Repeat_M0;
+            for(auto i = 0; i < REPEATS; i++)
             {
-                acc_0.get_thread_buffer()[4 * i + 0] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 0];
-                acc_0.get_thread_buffer()[4 * i + 1] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 1];
-                acc_0.get_thread_buffer()[4 * i + 2] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 2];
-                acc_0.get_thread_buffer()[4 * i + 3] *= acc_0_full.get_thread_buffer()[4 * (i + BlockShape::Repeat_N0) + 3];
+                acc_0.get_thread_buffer()[4 * i + 0] += acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 0];
+                acc_0.get_thread_buffer()[4 * i + 1] += acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 1];
+                acc_0.get_thread_buffer()[4 * i + 2] += acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 2];
+                acc_0.get_thread_buffer()[4 * i + 3] += acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 3];
             }
         }
         block_sync_lds();

@@ -339,7 +339,7 @@ struct FillStepRange
 template <typename T>
 struct FillConstant
 {
-    T value_{type_convert<T>(1.0f)};
+    T value_{type_convert<T>(1.f)};
 
     template <typename ForwardIter>
     void operator()(ForwardIter first, ForwardIter last) const

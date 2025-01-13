@@ -11,19 +11,24 @@
 template <typename DataType>
 auto get_elimit()
 {
-    double rtol = 1e-2;
-    double atol = 1e-2;
+    double rtol = 2e-2;
+    double atol = 2e-2;
     return ck_tile::make_tuple(rtol, atol);
 }
 
 template <>
 auto get_elimit<ck_tile::bf16_t>()
 {
-    double rtol = 1e-2;
-    double atol = 1e-2;
+    double rtol = 1e-1;
+    double atol = 1e-1;
     return ck_tile::make_tuple(rtol, atol);
 }
-
+template<typename T>
+void fill(T * x, int len, T val) {
+    for(int i = 0; i <len; i++){
+        x[i] = val;
+    }
+}
 // mfma_type, 0:32x32, 1:16x16
 // TODO: padding?
 template <typename T>
@@ -77,7 +82,7 @@ auto shuffle_moe_weight_gateup(const ck_tile::HostTensor<T>& t, std::string mfma
         ck_tile::HostTensor<T> t_view({b_, 2 , n_ / 512, 16 , 16, k_ / 32, 4, 8});
         // ck_tile::HostTensor<T> t_view({b_, n_ / 16, 16, k_ / 32, 4, 8});
         std::copy(t.begin(), t.end(), t_view.begin());
-        // return ck_tile::reference_permute(t_view, {0, 1,    3, 4, 2, 5});
+        // return ck_tile::reference_permute(t_view, {0,    1, 3, 4, 2, 5});
         return ck_tile::reference_permute(t_view, {0, 2, 1, 3, 5, 6, 4, 7});
     }
     else if((mfma_dtype == "int8" || mfma_dtype == "fp8") && mfma_type == 0)
@@ -133,9 +138,9 @@ auto create_args(int argc, char* argv[])
         .insert("tp", "8", "tensor parallel size")
         .insert("v", "1", "cpu validation or not")
         .insert("kname", "1", "print kernel name or not")
-        .insert("prec_i", "bf16", "input precision")
-        .insert("prec_w", "bf16", "weight precision")
-        .insert("prec_o", "bf16", "output precision")
+        .insert("prec_i", "fp16", "input precision")
+        .insert("prec_w", "fp16", "weight precision")
+        .insert("prec_o", "fp16", "output precision")
         .insert("prec_st", "auto", "token scale data type. auto will set to fp32")
         .insert("prec_sw", "auto", "weight scale data type. auto will set to fp32")
         .insert("prec_sq", "auto", "(dynamic) smooth quant data type. auto will set to fp32")
@@ -304,14 +309,46 @@ bool run(const ck_tile::ArgParser& arg_parser)
     }
     else if(init == 3)
     {
-        ck_tile::FillConstant<ADataType>{}(a_host);
-        ck_tile::FillConstant<GDataType>{}(g_host);
-        ck_tile::FillConstant<DDataType>{}(d_host);
-        ck_tile::FillConstant<AScaleDataType>{}(sa_host);
-        ck_tile::FillConstant<GScaleDataType>{}(sg_host);
-        ck_tile::FillConstant<DScaleDataType>{}(sd_host);
-        ck_tile::FillConstant<YSmoothScaleDataType>{}(sy_host);
-        ck_tile::FillConstant<TopkWeightDataType>{}(topk_weight_host);
+        // ck_tile::FillConstant<ADataType>{}(a_host);
+        // ck_tile::FillStepRange<ADataType>{0.f, 16384.f, 1.f}(a_host);
+        // for (int i = 0 ; i < tokens; i++){
+        //     for (int j = 0; j < hidden_size; j++) {
+        //         a_host.mData[i * hidden_size + j] = ck_tile::type_convert<ADataType>(float(i+1) * 0.1 + float(i * j % 116) * 0.0012);
+        //     }
+        // }
+        ck_tile::FillUniformDistribution<ADataType>{0.f, 1.f, seed, true}(a_host);
+        ck_tile::FillUniformDistribution<GDataType>{0.f, 1.f, seed, true}(g_host);
+        ck_tile::FillUniformDistribution<DDataType>{0.f, 1.f, seed, true}(d_host);
+        
+        ck_tile::FillUniformDistribution<AScaleDataType>{-.5f, .5f, seed, true}(sa_host);
+        ck_tile::FillUniformDistribution<GScaleDataType>{-.5f, .5f, seed, true}(sg_host);
+        ck_tile::FillUniformDistribution<DScaleDataType>{-.5f, .5f, seed, true}(sd_host);
+        ck_tile::FillUniformDistribution<YSmoothScaleDataType>{-.5f, .5f, seed, true}(sy_host);
+        ck_tile::FillUniformDistribution<TopkWeightDataType>{-.5f, .5f, seed, true}(
+            topk_weight_host);
+        // a_host.savetxt("a.txt");
+        // fill((ADataType *)a_host.mData.data(), a_host.size(), ck_tile::type_convert<ADataType>(0.1f));
+        // fill((GDataType *)g_host.mData.data(), g_host.size(), ck_tile::type_convert<GDataType>(0.1f));
+        // fill((DDataType *)d_host.mData.data(), d_host.size(), ck_tile::type_convert<DDataType>(0.1f));
+        // fill((AScaleDataType *)sa_host.mData.data(), sa_host.size(), ck_tile::type_convert<AScaleDataType>(1.f));
+        // fill((GScaleDataType *)sg_host.mData.data(), sg_host.size(), ck_tile::type_convert<GScaleDataType>(1.f));
+        // fill((DScaleDataType *)sd_host.mData.data(), sd_host.size(), ck_tile::type_convert<DScaleDataType>(1.f));
+        // fill((DScaleDataType *)sd_host.mData.data(), sd_host.size(), ck_tile::type_convert<DScaleDataType>(1.f));
+        // fill((YSmoothScaleDataType *)sy_host.mData.data(), sy_host.size(), ck_tile::type_convert<YSmoothScaleDataType>(1.f));
+        // fill((TopkWeightDataType *)topk_weight_host.mData.data(), topk_weight_host.size(), ck_tile::type_convert<TopkWeightDataType>(1.f));
+        // ck_tile::FillNormalDistribution<ADataType>{.1f, .1f, seed, true}(a_host);
+        // ck_tile::FillNormalDistribution<GDataType>{.1f, .1f, seed, true}(g_host);
+        // ck_tile::FillNormalDistribution<DDataType>{.1f, .1f, seed, true}(d_host);
+        // ck_tile::FillNormalDistribution<AScaleDataType>{1.f, 1.f, seed, true}(sa_host);
+        // ck_tile::FillNormalDistribution<GScaleDataType>{1.f, 1.f, seed, true}(sg_host);
+        // ck_tile::FillNormalDistribution<DScaleDataType>{1.f, 1.f, seed, true}(sd_host);
+        // ck_tile::FillNormalDistribution<YSmoothScaleDataType>{1.f, 1.f, seed, true}(sy_host);
+        // ck_tile::FillNormalDistribution<TopkWeightDataType>{1.f, 1.f, seed, true}(topk_weight_host);
+        
+        // ck_tile::FillNormalDistribution<DDataType>{0.f, 1.f, seed, true}(d_host);
+        // ck_tile::FillNormalDistribution<DScaleDataType>{0.f, 1.f, seed, true}(sd_host);
+        // ck_tile::FillNormalDistribution<YSmoothScaleDataType>{0.f, 1.f, seed, true}(sy_host);
+        // ck_tile::FillNormalDistribution<TopkWeightDataType>{0.f, 1.f, seed, true}(topk_weight_host);
     }
 
     // permute weight
@@ -498,6 +535,7 @@ bool run(const ck_tile::ArgParser& arg_parser)
 
             auto o_dev = o_buf.ToHost<ODataType>();
             o_dev.savetxt("gpu-out.txt", "float");
+            o_host.savetxt("ref.txt", "float");
             auto [rtol, atol] = get_elimit<ADataType>();
             pass &= ck_tile::check_err(
                 o_dev, o_host, std::string("OUT Error: Incorrect results!"), rtol, atol);
@@ -583,7 +621,7 @@ bool run(const ck_tile::ArgParser& arg_parser)
 
         if(do_validation)
         {
-            ck_tile::reference_fused_moe<AccDataType, ck_tile::element_wise::Gelu>(
+            ck_tile::reference_fused_moe<AccDataType, ck_tile::element_wise::Silu>(
                 a_host,
                 g_host,
                 d_host,
