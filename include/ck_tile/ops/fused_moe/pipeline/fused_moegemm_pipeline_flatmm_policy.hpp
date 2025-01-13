@@ -243,7 +243,7 @@ struct FusedMoeGemmPipelineFlatmmPolicy
     CK_TILE_HOST_DEVICE static constexpr auto MakeGlobalTileDistribution_G()
     {
         constexpr auto PermuteEnum = Problem::Traits::PermuteEnum;
-        // constexpr index_t hidden_radio_0 = Problem::Traits::IsGateOnly ? 1 : 2;
+        constexpr index_t hidden_radio_0 = Problem::Traits::IsGateOnly ? 1 : 2;
         using S_ = typename Problem::BlockShape;
         if constexpr(PermuteEnum == FusedMoeGemmWeightPermuteEnum::b_nr_kr_waveflatten)
         {
@@ -251,7 +251,7 @@ struct FusedMoeGemmPipelineFlatmmPolicy
             // number<S_::Repeat_N0>{}.eee();
             return MakeGlobalTileDistribution_Nr_Kr_W<S_::WarpPerBlock_N0,
                                                       S_::WarpPerBlock_K0,
-                                                      S_::Repeat_N0, /// hidden_radio_0,
+                                                      S_::Repeat_N0 * hidden_radio_0,
                                                       S_::Repeat_K0,
                                                       get_warp_size(),
                                                       GetAlignment_G<Problem>()>();
@@ -803,7 +803,21 @@ struct FusedMoeGemmPipelineFlatmmPolicy
                           S_::Warp_M0 == 16 && S_::Warp_N0 == 16 && S_::Warp_K0 == 32)
         {
             return Flatmm_32x512x128_1x4x1_16x16x32_FP16{};
+        } 
+        else if constexpr(std::is_same_v<typename Problem::ADataType, ck_tile::bf16_t> &&
+                     std::is_same_v<typename Problem::GDataType, ck_tile::bf16_t> &&
+                     S_::Block_M0 == 32 && S_::Block_N0 == 256 && S_::Block_K0 == 128 &&
+                     S_::Warp_M0 == 16 && S_::Warp_N0 == 16 && S_::Warp_K0 == 32)
+        {
+            return Flatmm_32x256x128_1x4x1_16x16x32_BF16{};
         }
+        else if constexpr(std::is_same_v<typename Problem::ADataType, ck_tile::fp16_t> &&
+                          std::is_same_v<typename Problem::GDataType, ck_tile::fp16_t> &&
+                          S_::Block_M0 == 32 && S_::Block_N0 == 256 && S_::Block_K0 == 128 &&
+                          S_::Warp_M0 == 16 && S_::Warp_N0 == 16 && S_::Warp_K0 == 32)
+        {
+            return Flatmm_32x256x128_1x4x1_16x16x32_FP16{};
+        } 
     }
 
     template <typename Problem>
@@ -850,6 +864,26 @@ struct FusedMoeGemmPipelineFlatmmPolicy
         {
             // return FlatmmSn_32x128x512_1x4x1_16x16x32_FP16{};
             return FlatmmSn_32x128x512_1x4x1_16x16x32_FP16_itl{};
+        }
+        else if constexpr(std::is_same_v<typename Problem::YDataType, ck_tile::bf16_t> &&
+                          std::is_same_v<typename Problem::DDataType, ck_tile::bf16_t> &&
+                          std::is_same_v<typename Problem::TopkWeightDataType, float> &&
+                          S_::Block_M1 == 32 && S_::Block_N1 == 128 && S_::Block_K1 == 256 &&
+                          S_::Warp_M0 == 16 && S_::Warp_N0 == 16 && S_::Warp_K0 == 32 &&
+                          T_::PipeInterleave == true)
+        {
+            // return FlatmmSn_32x128x512_1x4x1_16x16x32_FP16{};
+            return FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl{};
+        }
+        else if constexpr(std::is_same_v<typename Problem::YDataType, ck_tile::fp16_t> &&
+                          std::is_same_v<typename Problem::DDataType, ck_tile::fp16_t> &&
+                          std::is_same_v<typename Problem::TopkWeightDataType, float> &&
+                          S_::Block_M1 == 32 && S_::Block_N1 == 128 && S_::Block_K1 == 256 &&
+                          S_::Warp_M0 == 16 && S_::Warp_N0 == 16 && S_::Warp_K0 == 32 &&
+                          T_::PipeInterleave == true)
+        {
+            // return FlatmmSn_32x128x512_1x4x1_16x16x32_FP16{};
+            return FlatmmSn_32x128x256_1x4x1_16x16x32_FP16_itl{};
         }
     }
 };

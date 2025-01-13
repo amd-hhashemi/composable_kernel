@@ -73,7 +73,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
         constexpr index_t smem_0 = Policy::template GetUK_0<Problem>().GetSmemSize();
         constexpr index_t smem_1 = Policy::template GetUK_1<Problem>().GetSmemSize();
         constexpr index_t smem_bridge =
-            BlockShape::Block_M0 * BlockShape::Block_N0 * (IsGateOnly ? 1 : 2);
+            BlockShape::Block_M0 * BlockShape::Block_N0;
         return max(smem_0, max(smem_1, smem_bridge));
     }
 
@@ -168,7 +168,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
                                    index_t intermediate_tile_id)
     {
         constexpr index_t hidden_radio_0            = IsGateOnly ? 1 : 2;
-        ck_tile::index_t shared_intermediate_size_0 = kargs.intermediate_size / hidden_radio_0;
+        ck_tile::index_t shared_intermediate_size_0 = kargs.intermediate_size;
         ck_tile::index_t shared_intermediate_size_1 = kargs.intermediate_size / hidden_radio_0;
 
         index_t nr_0 = shared_intermediate_size_0 / BlockShape::Warp_N0; // divide N in W
@@ -178,13 +178,13 @@ struct FusedMoeGemmPipeline_FlatmmUk
 
         const IndexDataType expert_id = __builtin_amdgcn_readfirstlane(
             reinterpret_cast<const IndexDataType*>(kargs.sorted_expert_ids_ptr)[sorted_tile_id]);
-        index_t expert_stride_0 = shared_intermediate_size_0 * kargs.hidden_size * hidden_radio_0;
+        index_t expert_stride_0 = shared_intermediate_size_0 * kargs.hidden_size;
         index_t expert_stride_1 = shared_intermediate_size_1 * kargs.hidden_size;
 
         // nr*kr*w
         index_t interm_idx_nr0 = __builtin_amdgcn_readfirstlane(
             intermediate_tile_id *
-            BlockShape::Block_Nr0); // intermediate_tile_id * Block_N / (N in W)
+            BlockShape::Block_Nr0 * hidden_radio_0); // intermediate_tile_id * Block_N / (N in W)
 
         index_t interm_idx_kr1 = __builtin_amdgcn_readfirstlane(
             intermediate_tile_id *
@@ -218,7 +218,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
 
             auto g_window_ = make_tile_window_linear_raw(
                 g_view_,
-                make_tuple(number<BlockShape::Block_Nr0>{},
+                make_tuple(number<BlockShape::Block_Nr0 * hidden_radio_0>{},
                            number<BlockShape::Block_Kr0>{},
                            number<BlockShape::Block_W0>{}),
                 {0, 0, 0},
@@ -324,7 +324,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
                             kargs.hidden_size,
                             BlockShape::Block_K0, // tile offset for B matrix each unroll
                             BlockShape::Block_Kr0 *
-                                BlockShape::Block_W0); // tile offset for B matrix each unroll
+                            BlockShape::Block_W0); // tile offset for B matrix each unroll
 
         // fast GeLu
         if constexpr(std::is_same_v<typename Problem::GateActivation,
@@ -351,32 +351,32 @@ struct FusedMoeGemmPipeline_FlatmmUk
         block_sync_lds();
 
         // up
-        if(!IsGateOnly)
-        {
-            // up ptr. add hafl expoert_stride_0 as offset.
-            auto u_win = gu_win_gen(shared_intermediate_size_0 * kargs.hidden_size);
-            auto u_res = u_win.get_bottom_tensor_view().get_buffer_view().cached_buf_res_;
-            auto u_coords =
-                generate_tuple([&](auto i) { return u_win.cached_coords_[i].get_offset(); },
-                               number<decltype(u_win)::NumAccess_NonLinear>{});
-            // reuse UK0
-            auto uk_0_u  = Policy::template GetUK_0<Problem>();
-            auto acc_0_u = uk_0_u(a_res,
-                                  a_coords,
-                                  u_res,
-                                  u_coords,
-                                  smem,
-                                  kargs.hidden_size,
-                                  BlockShape::Block_K0, // tile offset for B matrix each unroll
-                                  BlockShape::Block_Kr0 *
-                                      BlockShape::Block_W0); // tile offset for B matrix each unroll
-            // elementwise mul gate*up.
-            sweep_tile(
-                y_pre,
-                [&](auto idx0) { y_pre(idx0) = y_pre(idx0) * acc_0_u(idx0); },
-                sequence<1, 1>{});
-            block_sync_lds();
-        }
+        // if(!IsGateOnly)
+        // {
+        //     // up ptr. add hafl expoert_stride_0 as offset.
+        //     auto u_win = gu_win_gen(shared_intermediate_size_0 * kargs.hidden_size);
+        //     auto u_res = u_win.get_bottom_tensor_view().get_buffer_view().cached_buf_res_;
+        //     auto u_coords =
+        //         generate_tuple([&](auto i) { return u_win.cached_coords_[i].get_offset(); },
+        //                        number<decltype(u_win)::NumAccess_NonLinear>{});
+        //     // reuse UK0
+        //     auto uk_0_u  = Policy::template GetUK_0<Problem>();
+        //     auto acc_0_u = uk_0_u(a_res,
+        //                           a_coords,
+        //                           u_res,
+        //                           u_coords,
+        //                           smem,
+        //                           kargs.hidden_size,
+        //                           BlockShape::Block_K0, // tile offset for B matrix each unroll
+        //                           BlockShape::Block_Kr0 *
+        //                               BlockShape::Block_W0); // tile offset for B matrix each unroll
+        //     // elementwise mul gate*up.
+        //     sweep_tile(
+        //         y_pre,
+        //         [&](auto idx0) { y_pre(idx0) = y_pre(idx0) * acc_0_u(idx0); },
+        //         sequence<1, 1>{});
+        //     block_sync_lds();
+        // }
 
         store_tile(bridge_sst_win, cast_tile<YDataType>(y_pre));
         block_sync_lds();

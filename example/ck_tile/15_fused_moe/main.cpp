@@ -59,6 +59,42 @@ auto shuffle_moe_weight(const ck_tile::HostTensor<T>& t, std::string mfma_dtype,
     }
     return t;
 }
+template <typename T>
+auto shuffle_moe_weight_gateup(const ck_tile::HostTensor<T>& t, std::string mfma_dtype, int mfma_type = 0)
+{
+    assert(t.get_lengths().size() == 3);
+    int b_ = t.get_lengths()[0];
+    int n_ = t.get_lengths()[1];
+    int k_ = t.get_lengths()[2];
+    if((mfma_dtype == "bf16" || mfma_dtype == "fp16") && mfma_type == 0)
+    {
+        ck_tile::HostTensor<T> t_view({b_, n_ / 32, 32, k_ / 16, 2, 8});
+        std::copy(t.begin(), t.end(), t_view.begin());
+        return ck_tile::reference_permute(t_view, {0, 1, 3, 4, 2, 5});
+    }
+    else if((mfma_dtype == "bf16" || mfma_dtype == "fp16") && mfma_type == 1)
+    {
+        ck_tile::HostTensor<T> t_view({b_, 2 , n_ / 512, 16 , 16, k_ / 32, 4, 8});
+        // ck_tile::HostTensor<T> t_view({b_, n_ / 16, 16, k_ / 32, 4, 8});
+        std::copy(t.begin(), t.end(), t_view.begin());
+        // return ck_tile::reference_permute(t_view, {0, 1,    3, 4, 2, 5});
+        return ck_tile::reference_permute(t_view, {0, 2, 1, 3, 5, 6, 4, 7});
+    }
+    else if((mfma_dtype == "int8" || mfma_dtype == "fp8") && mfma_type == 0)
+    {
+        ck_tile::HostTensor<T> t_view({b_, n_ / 32, 32, k_ / 32, 2, 16});
+        std::copy(t.begin(), t.end(), t_view.begin());
+        return ck_tile::reference_permute(t_view, {0, 1, 3, 4, 2, 5});
+    }
+    else if((mfma_dtype == "int8" || mfma_dtype == "fp8") && mfma_type == 1)
+    {
+        ck_tile::HostTensor<T> t_view({b_, n_ / 16, 16, k_ / 64, 4, 16});
+        std::copy(t.begin(), t.end(), t_view.begin());
+        return ck_tile::reference_permute(t_view, {0, 1, 3, 4, 2, 5});
+    }
+    return t;
+}
+
 
 template <typename IndexType>
 void topid_unique_gen(

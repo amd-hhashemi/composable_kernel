@@ -63,7 +63,7 @@ struct FusedMoeGemmShape
 
 //  S<32, 512,  128>, S<1, 4, 1>, S<16, 16, 32>
     static constexpr index_t Block_M0        = BlockTile_0::at(number<0>{}); //32
-    static constexpr index_t Block_N0        = BlockTile_0::at(number<1>{}); //512
+    static constexpr index_t Block_N0        = BlockTile_0::at(number<1>{}); //256
     static constexpr index_t Block_K0        = BlockTile_0::at(number<2>{}); // 128
     static constexpr index_t WarpPerBlock_M0 = WarpPerBlock_0::at(number<0>{}); // 1
     static constexpr index_t WarpPerBlock_N0 = WarpPerBlock_0::at(number<1>{}); // 4
@@ -73,18 +73,18 @@ struct FusedMoeGemmShape
     static constexpr index_t Warp_K0         = WarpTile_0::at(number<2>{});  // 32
 
     static constexpr index_t ThreadPerBlock_M0 = Warp_M0 * WarpPerBlock_M0;
-    static constexpr index_t ThreadPerBlock_N0 = Warp_N0 * WarpPerBlock_N0;
+    static constexpr index_t ThreadPerBlock_N0 = Warp_N0 * WarpPerBlock_N0; // 64
     static constexpr index_t ThreadPerBlock_K0 = Warp_K0 * WarpPerBlock_K0;
     static_assert(Block_M0 % ThreadPerBlock_M0 == 0);
     static_assert(Block_N0 % ThreadPerBlock_N0 == 0);
     static_assert(Block_K0 % ThreadPerBlock_K0 == 0);
     static constexpr index_t Repeat_M0 = Block_M0 / ThreadPerBlock_M0;  // 2
-    static constexpr index_t Repeat_N0 = Block_N0 / ThreadPerBlock_N0;  // 8
+    static constexpr index_t Repeat_N0 = Block_N0 / ThreadPerBlock_N0;  // 4
     static constexpr index_t Repeat_K0 = Block_K0 / ThreadPerBlock_K0;  // 4
 
     static constexpr index_t Block_M1        = BlockTile_1::at(number<0>{}); //32
     static constexpr index_t Block_N1        = BlockTile_1::at(number<1>{}); //128
-    static constexpr index_t Block_K1        = BlockTile_1::at(number<2>{}); //512
+    static constexpr index_t Block_K1        = BlockTile_1::at(number<2>{}); //256
     static constexpr index_t WarpPerBlock_M1 = WarpPerBlock_1::at(number<0>{}); // 1
     static constexpr index_t WarpPerBlock_N1 = WarpPerBlock_1::at(number<1>{}); // 4
     static constexpr index_t WarpPerBlock_K1 = WarpPerBlock_1::at(number<2>{}); // 1
@@ -100,7 +100,7 @@ struct FusedMoeGemmShape
     static_assert(Block_K1 % ThreadPerBlock_K1 == 0);
     static constexpr index_t Repeat_M1 = Block_M1 / ThreadPerBlock_M1;   // 2
     static constexpr index_t Repeat_N1 = Block_N1 / ThreadPerBlock_N1;   // 2
-    static constexpr index_t Repeat_K1 = Block_K1 / ThreadPerBlock_K1;   // 16
+    static constexpr index_t Repeat_K1 = Block_K1 / ThreadPerBlock_K1;   // 8
 
     static constexpr index_t BlockSize = warpSize * NumWarps;
 
@@ -118,7 +118,7 @@ struct FusedMoeGemmShape
     static constexpr index_t Block_Kr0 = Block_K0 / Warp_K0;
     static constexpr index_t Block_W1  = Warp_N1 * Warp_K1;  // 512
     static constexpr index_t Block_Nr1 = Block_N1 / Warp_N1;  // 8
-    static constexpr index_t Block_Kr1 = Block_K1 / Warp_K1;  // 16
+    static constexpr index_t Block_Kr1 = Block_K1 / Warp_K1;  // 8
 
     static_assert(Block_W0 == Block_W1);
     // static_assert(Block_Nr0 == Block_Kr1);
