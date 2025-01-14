@@ -126,7 +126,8 @@
     " ds_read_b32 v13, %[v_sfl_sld] offset:16736  \n"
     " ds_write_b64 %[v_sfl_sst], [%[c20],%[c21]] offset:27520  \n" _UK_MFMA_
     " [%[c0], %[c1], %[c2], %[c3]], acc[6:7], v[134:135], v[64:67]  \n"
-    " ds_write_b64 %[v_sfl_sst], [%[c22],%[c23]] offset:31872  \n" _UK_MFMA_
+    " ds_write_b64 %[v_sfl_sst], [%[c22],%[c23]] offset:31872  \n" 
+    _UK_MFMA_
     " [%[c0], %[c1], %[c2], %[c3]], acc[8:9], v[136:137], v[64:67]  \n"
     " ds_read_b32 v14, %[v_sfl_sld] offset:20992  \n"
     " ds_read_b32 v15, %[v_sfl_sld] offset:21024  \n" _UK_MFMA_
@@ -226,6 +227,7 @@
     "  s_mov_b64     exec, s[38:39]                           \n" 
     " s_mov_b64 exec, %[s_execflag_7] \n" _UK_ATOMIC_ADD_ " %[v_os_o7], v17, s[8:9] \n"
     "  s_mov_b64     exec, s[38:39]                           \n"
+    
     " s_add_u32 s60, 0x00000100, s80  \n"
     " s_cmp_lt_u32 s60, %[s_loop_cnt]  \n"
     " s_cselect_b32 s56, %[s_tile_os_b], 0  \n"
@@ -275,16 +277,16 @@
                      " [%[c16], %[c17], %[c18], %[c19]], acc[128:129], v[128:129], 0  \n"
                      " ds_read_b32 v10, %[v_sfl_sld] offset:25344  \n"
                      " ds_read_b32 v11, %[v_sfl_sld] offset:25376  \n"
-                     " ds_write_b64 v3, v[64:65] offset:16640  \n" _UK_MFMA_
+                     " ds_write_b64 %[v_sfl_sst], v[64:65] offset:16640  \n" _UK_MFMA_
                      " [%[c16], %[c17], %[c18], %[c19]], acc[130:131], v[130:131], v[80:83]  \n"
                      " buffer_load_dwordx4 acc[0:3],  %[v_os_b0], s[12:15], 0 offen  \n"
-                     " ds_write_b64 v3, v[66:67] offset:20992  \n" _UK_MFMA_
+                     " ds_write_b64 %[v_sfl_sst], v[66:67] offset:20992  \n" _UK_MFMA_
                      " [%[c16], %[c17], %[c18], %[c19]], acc[132:133], v[132:133], v[80:83]  \n"
                      " ds_read_b32 v12, %[v_sfl_sld] offset:25408  \n"
                      " ds_read_b32 v13, %[v_sfl_sld] offset:25440  \n"
-                     " ds_write_b64 v3, v[68:69] offset:18816  \n" _UK_MFMA_
+                     " ds_write_b64 %[v_sfl_sst], v[68:69] offset:18816  \n" _UK_MFMA_
                      " [%[c16], %[c17], %[c18], %[c19]], acc[134:135], v[134:135], v[80:83]  \n"
-                     " ds_write_b64 v3, v[70:71] offset:23168  \n" _UK_MFMA_
+                     " ds_write_b64 %[v_sfl_sst], v[70:71] offset:23168  \n" _UK_MFMA_
                      " [%[c16], %[c17], %[c18], %[c19]], acc[136:137], v[136:137], v[80:83]  \n"
                      " ds_read_b32 v14, %[v_sfl_sld] offset:29696  \n"
                      " ds_read_b32 v15, %[v_sfl_sld] offset:29728  \n" _UK_MFMA_
@@ -419,6 +421,7 @@
                      "  s_mov_b64     exec, s[38:39]                           \n" 
                      " s_mov_b64 exec, %[s_execflag_7] \n" _UK_ATOMIC_ADD_
                      " %[v_os_o7], v17, s[8:9] \n"
+                     
                      "  s_mov_b64     exec, s[38:39]                           \n"
                      " s_add_u32 s60, 0x00000100, s80  \n"
                      " s_cmp_lt_u32 s60, %[s_loop_cnt]  \n"
@@ -517,12 +520,14 @@
                                                " %[v_os_o3], v13, s[8:9] \n"
                                                " s_mov_b64 exec, %[s_execflag_4] \n" _UK_ATOMIC_ADD_
                                                " %[v_os_o4], v14, s[8:9] \n"
+                                               
                                                " s_mov_b64 exec, %[s_execflag_5] \n" _UK_ATOMIC_ADD_
                                                " %[v_os_o5], v15, s[8:9] \n"
                                                " s_mov_b64 exec, %[s_execflag_6] \n" _UK_ATOMIC_ADD_
                                                " %[v_os_o6], v16, s[8:9] \n"
                                                " s_mov_b64 exec, %[s_execflag_7] \n" _UK_ATOMIC_ADD_
                                                " %[v_os_o7], v17, s[8:9] \n"
+                                               
                                                "  s_mov_b64     exec, s[38:39]  \n"
 
 #undef _UK_MFMA_

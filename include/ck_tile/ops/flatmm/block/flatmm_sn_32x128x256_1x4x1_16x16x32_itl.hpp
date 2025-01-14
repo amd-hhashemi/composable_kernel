@@ -84,15 +84,7 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
         register float v_c28 asm("v92");
         register float v_c29 asm("v93");
         register float v_c30 asm("v94");
-        register float v_c31 asm("v95");        
-        register bf16x2_t v_debug asm("v160");
-        register bf16x2_t v_debug1 asm("v161");
-        register bf16x2_t v_debug2 asm("v162");
-        register bf16x2_t v_debug3 asm("v163");
-        register bf16x2_t v_debug4 asm("v164");
-        register bf16x2_t v_debug5 asm("v165");
-        register bf16x2_t v_debug6 asm("v166");
-        register bf16x2_t v_debug7 asm("v167");
+        register float v_c31 asm("v95");
         int32_t nan_hi = 0x7fff0000;
         int32_t nan_lo = 0x00007fff;
 
@@ -119,7 +111,6 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
         // sld(v4) = v0/2 *34*4  + v0 % 2 *4 + wid*2 *4
         int sfl_sld = (lane_id % 2) * 2 + (lane_id / 2) * (64 + 4) + (threadIdx.x / 64) * 4;
         sfl_sld *= 2;
-
         // B nr->kr
         // clang-format off
 #pragma clang diagnostic push
@@ -162,15 +153,7 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
                 [c28]"+v"(v_c28),
                 [c29]"+v"(v_c29),
                 [c30]"+v"(v_c30),
-                [c31]"+v"(v_c31),
-                [debug0]"+v"(v_debug),
-                [debug1]"+v"(v_debug1),
-                [debug2]"+v"(v_debug2),
-                [debug3]"+v"(v_debug3),
-                [debug4]"+v"(v_debug4),
-                [debug5]"+v"(v_debug5),
-                [debug6]"+v"(v_debug6),
-                [debug7]"+v"(v_debug7)
+                [c31]"+v"(v_c31)
             :
             [sld_a_base]"n"(0),
             [shfl_base]"n"(0),
@@ -197,10 +180,6 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
                 [v_os_b1]"v"(static_cast<index_t>(cached_coords_b[number<1>{}] * sizeof(BDataType))),
                 [v_os_b2]"v"(static_cast<index_t>(cached_coords_b[number<2>{}] * sizeof(BDataType))),
                 [v_os_b3]"v"(static_cast<index_t>(cached_coords_b[number<3>{}] * sizeof(BDataType))),
-                // [v_os_b4]"v"(static_cast<index_t>(cached_coords_b[number<4>{}] * sizeof(BDataType))),
-                // [v_os_b5]"v"(static_cast<index_t>(cached_coords_b[number<5>{}] * sizeof(BDataType))),
-                // [v_os_b6]"v"(static_cast<index_t>(cached_coords_b[number<6>{}] * sizeof(BDataType))),
-                // [v_os_b7]"v"(static_cast<index_t>(cached_coords_b[number<7>{}] * sizeof(BDataType))),
                 [s_tile_os_o]"s"(tile_stride_o_bytes),
                 [s_tile_os_b]"s"(tile_stride_b_bytes),
                 [scale_0]"v"(s0),
@@ -216,7 +195,7 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
                 [s_execflag_6]"s"(o_flags[number<6>{}]),
                 [s_execflag_7]"s"(o_flags[number<7>{}])
             :
-          "memory", "exec","m0","vcc", "scc", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9",
+          "memory", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9",
           "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19",
           "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29",
           "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39",
@@ -247,7 +226,7 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
           "a244", "a245", "a246", "a247", "a248", "a249", "a250", "a251",
           "a252", "a253", "a254", "a255", 
           "s8", "s9", "s12", "s13", "s14", "s15", "s38", "s39", "s52", "s86",
-          "s36", "s37","s59","s80",
+          "s36", "s37","s59","s80","s56","s60",
           "v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17",
           "v50", "v54", "v55",
           "v64","v65","v66","v67","v68","v69","v70","v71",
@@ -274,14 +253,6 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_BF16_itl : public FlatmmSn_32x128x256_
         );
 #pragma clang diagnostic pop
         // clang-format on
-        // if(threadIdx.x==0) {
-        //     printf("%d\n", threadIdx.x);
-        // }
-        if(threadIdx.x == 0) {
-            printf("%d \n", threadIdx.x);
-        }
-        // }
-        // __syncthreads();
     }
 };
 
@@ -355,14 +326,22 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_FP16_itl : public FlatmmSn_32x128x256_
         register float v_c29 asm("v93");
         register float v_c30 asm("v94");
         register float v_c31 asm("v95");
-        register fp16x2_t v_debug asm("v160");
-        register fp16x2_t v_debug1 asm("v161");
-        register fp16x2_t v_debug2 asm("v162");
-        register fp16x2_t v_debug3 asm("v163");
-        register fp16x2_t v_debug4 asm("v164");
-        register fp16x2_t v_debug5 asm("v165");
-        register fp16x2_t v_debug6 asm("v166");
-        register fp16x2_t v_debug7 asm("v167");
+        // register fp16x2_t v_debug0 asm("v160");
+        // register fp16x2_t v_debug1 asm("v161");
+        // register fp16x2_t v_debug2 asm("v162");
+        // register fp16x2_t v_debug3 asm("v163");
+        // register fp16x2_t v_debug4 asm("v164");
+        // register fp16x2_t v_debug5 asm("v165");
+        // register fp16x2_t v_debug6 asm("v166");
+        // register fp16x2_t v_debug7 asm("v167");
+        // register fp16x2_t v_debug8 asm("v168");
+        // register fp16x2_t v_debug9 asm("v169");
+        // register fp16x2_t v_debug10 asm("v170");
+        // register fp16x2_t v_debug11 asm("v171");
+        // register fp16x2_t v_debug12 asm("v172");
+        // register fp16x2_t v_debug13 asm("v173");
+        // register fp16x2_t v_debug14 asm("v174");
+        // register fp16x2_t v_debug15 asm("v175");
         int32_t nan_hi = 0x7fff0000;
         int32_t nan_lo = 0x00007fff;
 
@@ -431,15 +410,24 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_FP16_itl : public FlatmmSn_32x128x256_
                 [c28]"+v"(v_c28),
                 [c29]"+v"(v_c29),
                 [c30]"+v"(v_c30),
-                [c31]"+v"(v_c31),
-                [debug0]"+v"(v_debug),
-                [debug1]"+v"(v_debug1),
-                [debug2]"+v"(v_debug2),
-                [debug3]"+v"(v_debug3),
-                [debug4]"+v"(v_debug4),
-                [debug5]"+v"(v_debug5),
-                [debug6]"+v"(v_debug6),
-                [debug7]"+v"(v_debug7)
+                [c31]"+v"(v_c31)
+                // ,
+                // [debug0]"+v"(v_debug0),
+                // [debug1]"+v"(v_debug1),
+                // [debug2]"+v"(v_debug2),
+                // [debug3]"+v"(v_debug3),
+                // [debug4]"+v"(v_debug4),
+                // [debug5]"+v"(v_debug5),
+                // [debug6]"+v"(v_debug6),
+                // [debug7]"+v"(v_debug7),
+                // [debug8 ]"+v"(v_debug8 ),
+                // [debug9 ]"+v"(v_debug9 ),
+                // [debug10]"+v"(v_debug10),
+                // [debug11]"+v"(v_debug11),
+                // [debug12]"+v"(v_debug12),
+                // [debug13]"+v"(v_debug13),
+                // [debug14]"+v"(v_debug14),
+                // [debug15]"+v"(v_debug15)
             :
             [sld_a_base]"n"(0),
             [shfl_base]"n"(0),
@@ -486,7 +474,8 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_FP16_itl : public FlatmmSn_32x128x256_
                 [s_execflag_6]"s"(o_flags[number<6>{}]),
                 [s_execflag_7]"s"(o_flags[number<7>{}])
             :
-          "memory", "exec","m0","vcc", "scc", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9",
+          "memory", "exec","m0","vcc", "scc", 
+          "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9",
           "a10", "a11", "a12", "a13", "a14", "a15", "a16", "a17", "a18", "a19",
           "a20", "a21", "a22", "a23", "a24", "a25", "a26", "a27", "a28", "a29",
           "a30", "a31", "a32", "a33", "a34", "a35", "a36", "a37", "a38", "a39",
@@ -517,7 +506,7 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_FP16_itl : public FlatmmSn_32x128x256_
           "a244", "a245", "a246", "a247", "a248", "a249", "a250", "a251",
           "a252", "a253", "a254", "a255", 
           "s8", "s9", "s12", "s13", "s14", "s15", "s38", "s39", "s52", "s86",
-          "s36", "s37","s59","s80",
+          "s36", "s37","s59","s80","s56", "s60",
           "v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17",
           "v50", "v54", "v55",
           "v64","v65","v66","v67","v68","v69","v70","v71",
@@ -544,9 +533,6 @@ struct FlatmmSn_32x128x256_1x4x1_16x16x32_FP16_itl : public FlatmmSn_32x128x256_
         );
 #pragma clang diagnostic pop
         // clang-format on
-        if(threadIdx.x == 0) {
-            printf("%d \n", threadIdx.x);
-        }
     }
 };
 

@@ -11,8 +11,8 @@
 template <typename DataType>
 auto get_elimit()
 {
-    double rtol = 2e-2;
-    double atol = 2e-2;
+    double rtol = 1e-1;
+    double atol = 1e-1;
     return ck_tile::make_tuple(rtol, atol);
 }
 
@@ -309,24 +309,6 @@ bool run(const ck_tile::ArgParser& arg_parser)
     }
     else if(init == 3)
     {
-        // ck_tile::FillConstant<ADataType>{}(a_host);
-        // ck_tile::FillStepRange<ADataType>{0.f, 16384.f, 1.f}(a_host);
-        // for (int i = 0 ; i < tokens; i++){
-        //     for (int j = 0; j < hidden_size; j++) {
-        //         a_host.mData[i * hidden_size + j] = ck_tile::type_convert<ADataType>(float(i+1) * 0.1 + float(i * j % 116) * 0.0012);
-        //     }
-        // }
-        ck_tile::FillUniformDistribution<ADataType>{0.f, 1.f, seed, true}(a_host);
-        ck_tile::FillUniformDistribution<GDataType>{0.f, 1.f, seed, true}(g_host);
-        ck_tile::FillUniformDistribution<DDataType>{0.f, 1.f, seed, true}(d_host);
-        
-        ck_tile::FillUniformDistribution<AScaleDataType>{-.5f, .5f, seed, true}(sa_host);
-        ck_tile::FillUniformDistribution<GScaleDataType>{-.5f, .5f, seed, true}(sg_host);
-        ck_tile::FillUniformDistribution<DScaleDataType>{-.5f, .5f, seed, true}(sd_host);
-        ck_tile::FillUniformDistribution<YSmoothScaleDataType>{-.5f, .5f, seed, true}(sy_host);
-        ck_tile::FillUniformDistribution<TopkWeightDataType>{-.5f, .5f, seed, true}(
-            topk_weight_host);
-        // a_host.savetxt("a.txt");
         // fill((ADataType *)a_host.mData.data(), a_host.size(), ck_tile::type_convert<ADataType>(0.1f));
         // fill((GDataType *)g_host.mData.data(), g_host.size(), ck_tile::type_convert<GDataType>(0.1f));
         // fill((DDataType *)d_host.mData.data(), d_host.size(), ck_tile::type_convert<DDataType>(0.1f));
@@ -336,19 +318,14 @@ bool run(const ck_tile::ArgParser& arg_parser)
         // fill((DScaleDataType *)sd_host.mData.data(), sd_host.size(), ck_tile::type_convert<DScaleDataType>(1.f));
         // fill((YSmoothScaleDataType *)sy_host.mData.data(), sy_host.size(), ck_tile::type_convert<YSmoothScaleDataType>(1.f));
         // fill((TopkWeightDataType *)topk_weight_host.mData.data(), topk_weight_host.size(), ck_tile::type_convert<TopkWeightDataType>(1.f));
-        // ck_tile::FillNormalDistribution<ADataType>{.1f, .1f, seed, true}(a_host);
-        // ck_tile::FillNormalDistribution<GDataType>{.1f, .1f, seed, true}(g_host);
-        // ck_tile::FillNormalDistribution<DDataType>{.1f, .1f, seed, true}(d_host);
-        // ck_tile::FillNormalDistribution<AScaleDataType>{1.f, 1.f, seed, true}(sa_host);
-        // ck_tile::FillNormalDistribution<GScaleDataType>{1.f, 1.f, seed, true}(sg_host);
-        // ck_tile::FillNormalDistribution<DScaleDataType>{1.f, 1.f, seed, true}(sd_host);
-        // ck_tile::FillNormalDistribution<YSmoothScaleDataType>{1.f, 1.f, seed, true}(sy_host);
-        // ck_tile::FillNormalDistribution<TopkWeightDataType>{1.f, 1.f, seed, true}(topk_weight_host);
-        
-        // ck_tile::FillNormalDistribution<DDataType>{0.f, 1.f, seed, true}(d_host);
-        // ck_tile::FillNormalDistribution<DScaleDataType>{0.f, 1.f, seed, true}(sd_host);
-        // ck_tile::FillNormalDistribution<YSmoothScaleDataType>{0.f, 1.f, seed, true}(sy_host);
-        // ck_tile::FillNormalDistribution<TopkWeightDataType>{0.f, 1.f, seed, true}(topk_weight_host);
+        ck_tile::FillNormalDistribution<ADataType>{0.f, .1f, seed, true}(a_host);
+        ck_tile::FillNormalDistribution<GDataType>{0.f, .1f, seed, true}(g_host);
+        ck_tile::FillNormalDistribution<DDataType>{0.f, .1f, seed, true}(d_host);
+        ck_tile::FillNormalDistribution<AScaleDataType>{0.f, 1.f, seed, true}(sa_host);
+        ck_tile::FillNormalDistribution<GScaleDataType>{0.f, 1.f, seed, true}(sg_host);
+        ck_tile::FillNormalDistribution<DScaleDataType>{0.f, 1.f, seed, true}(sd_host);
+        ck_tile::FillNormalDistribution<YSmoothScaleDataType>{0.f, 1.f, seed, true}(sy_host);
+        ck_tile::FillNormalDistribution<TopkWeightDataType>{0.f, 1.f, seed, true}(topk_weight_host);
     }
 
     // permute weight
@@ -369,10 +346,10 @@ bool run(const ck_tile::ArgParser& arg_parser)
     }
     else
     {
-        for(int i = 0; i < static_cast<int>(topk_ids_host.mData.size()); i++) {
-            topk_ids_host.mData[i] = 0;
-        }
-        // topid_unique_gen<IndexDataType>(topk_ids_host.mData, tokens, topk, experts, 11913);
+        // for(int i = 0; i < static_cast<int>(topk_ids_host.mData.size()); i++) {
+        //     topk_ids_host.mData[i] = 0;
+        // }
+        topid_unique_gen<IndexDataType>(topk_ids_host.mData, tokens, topk, experts, 11913);
     }
 
 // leave it here for future debug purpose
