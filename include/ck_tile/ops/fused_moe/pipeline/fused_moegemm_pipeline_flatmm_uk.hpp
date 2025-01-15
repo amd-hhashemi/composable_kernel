@@ -186,6 +186,8 @@ struct FusedMoeGemmPipeline_FlatmmUk
 
         const IndexDataType expert_id = __builtin_amdgcn_readfirstlane(
             reinterpret_cast<const IndexDataType*>(kargs.sorted_expert_ids_ptr)[sorted_tile_id]);
+        const IndexDataType expert_first_token = __builtin_amdgcn_readfirstlane(
+            reinterpret_cast<const IndexDataType*>(kargs.sorted_token_ids_ptr)[sorted_tile_id * 32]);
         index_t expert_stride_0 = shared_intermediate_size_0 * kargs.hidden_size;
         index_t expert_stride_1 = shared_intermediate_size_1 * kargs.hidden_size;
 
@@ -207,10 +209,12 @@ struct FusedMoeGemmPipeline_FlatmmUk
                        threadIdx.x % (BlockShape::Block_K0 / kAlignmentA) * kAlignmentA;
             },
             number<row_ids_a.size()>{});
-        // if(threadIdx.x==0)
-        //     printf("row id %d\n", row_ids_a[0]);
-        if (row_ids_a.at(0) >= kargs.num_tokens)
+        if (expert_first_token >= kargs.num_tokens) 
             return;
+        // printf("tid %d %d\n", blockIdx.x, threadIdx.x);
+        // for (int i = 0; i < row_ids_a.size(); i++) {
+        //     printf("%d bid %d tid %d rowid %d\n", i, blockIdx.x, threadIdx.x, row_ids_a[i]);
+        // }
         auto a_res =
             make_wave_buffer_resource(reinterpret_cast<const ADataType*>(kargs.a_ptr),
                                       kargs.num_tokens * kargs.stride_token * sizeof(ADataType));
@@ -343,7 +347,7 @@ struct FusedMoeGemmPipeline_FlatmmUk
         // for(auto i = 0; i < 16; i++)
         // {
         //     if(threadIdx.x==0) {
-        //         printf("%d, %.1f, %.1f, %.1f, %.1f\n",i, acc_0_full.get_thread_buffer()[4 * (i) + 0], acc_0_full.get_thread_buffer()[4 * (i) + 1], acc_0_full.get_thread_buffer()[4 * (i) + 2], acc_0_full.get_thread_buffer()[4 * (i) + 3]);
+        //         printf("i %d, tid %d, %.1f, %.1f, %.1f, %.1f\n",i, threadIdx.x, acc_0_full.get_thread_buffer()[4 * (i) + 0], acc_0_full.get_thread_buffer()[4 * (i) + 1], acc_0_full.get_thread_buffer()[4 * (i) + 2], acc_0_full.get_thread_buffer()[4 * (i) + 3]);
         //     }
         // }
         // auto acc_0 = IsGateOnly ? acc_0_full : Policy::template GetUK_0<Problem>().MakeCBlockTileGUMerge();
