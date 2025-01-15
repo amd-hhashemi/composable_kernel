@@ -70,12 +70,20 @@ struct FusedMoeGemmPipeline_FlatmmUk
 
     CK_TILE_HOST_DEVICE static constexpr ck_tile::index_t GetSmemSize()
     {
+        return 32768;
         // constexpr index_t smem_0 = Policy::template GetUK_0<Problem>().GetSmemSize();
         // constexpr index_t smem_1 = Policy::template GetUK_1<Problem>().GetSmemSize();
         // constexpr index_t smem_bridge =
         //     BlockShape::Block_M0 * BlockShape::Block_N0;
-        return 32768;//max(smem_0, max(smem_1, smem_bridge));
+        // return 32768;//max(smem_0, max(smem_1, smem_bridge));
+        constexpr index_t smem_0 = Policy::template GetUK_0<Problem>().GetSmemSize();
+        constexpr index_t smem_1 = Policy::template GetUK_1<Problem>().GetSmemSize();
+        constexpr index_t smem_bridge =
+            BlockShape::Block_M0 * BlockShape::Block_N0 * sizeof(YDataType);
+        // return max(smem_0, max(smem_1, smem_bridge));
+        return max(smem_0 + smem_1, smem_bridge);
     }
+
 
     // this is the thread-offset along row/col
     CK_TILE_HOST_DEVICE static auto GetACoord()
@@ -199,7 +207,10 @@ struct FusedMoeGemmPipeline_FlatmmUk
                        threadIdx.x % (BlockShape::Block_K0 / kAlignmentA) * kAlignmentA;
             },
             number<row_ids_a.size()>{});
-
+        // if(threadIdx.x==0)
+        //     printf("row id %d\n", row_ids_a[0]);
+        if (row_ids_a.at(0) >= kargs.num_tokens)
+            return;
         auto a_res =
             make_wave_buffer_resource(reinterpret_cast<const ADataType*>(kargs.a_ptr),
                                       kargs.num_tokens * kargs.stride_token * sizeof(ADataType));

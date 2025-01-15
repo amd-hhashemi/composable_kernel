@@ -346,10 +346,10 @@ bool run(const ck_tile::ArgParser& arg_parser)
     }
     else
     {
-        // for(int i = 0; i < static_cast<int>(topk_ids_host.mData.size()); i++) {
-        //     topk_ids_host.mData[i] = 0;
-        // }
-        topid_unique_gen<IndexDataType>(topk_ids_host.mData, tokens, topk, experts, 11913);
+        for(int i = 0; i < static_cast<int>(topk_ids_host.mData.size()); i++) {
+            topk_ids_host.mData[i] = i % 4;
+        }
+        // topid_unique_gen<IndexDataType>(topk_ids_host.mData, tokens, topk, experts, 11913);
     }
 
 // leave it here for future debug purpose

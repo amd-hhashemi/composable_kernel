@@ -240,7 +240,7 @@ struct FusedMoeGemmKernel
     {
         if constexpr(UseUK)
         {
-            __shared__ CK_TILE_LDS_ADDR ADataType smem[GetSmemSize()];
+            __shared__ CK_TILE_LDS_ADDR char smem[GetSmemSize()];
             IndexDataType num_sorted_tiles = __builtin_amdgcn_readfirstlane(
                 *reinterpret_cast<const IndexDataType*>(kargs.num_sorted_tiles_ptr));
 
@@ -275,7 +275,7 @@ struct FusedMoeGemmKernel
             index_t expert_stride_0 = kargs.intermediate_size * hidden_radio_0 * kargs.hidden_size;
             index_t expert_stride_1 = kargs.intermediate_size * kargs.hidden_size;
 
-            __shared__ CK_TILE_LDS_ADDR ADataType smem[GetSmemSize()];
+            __shared__ CK_TILE_LDS_ADDR char smem[GetSmemSize()];
 
             // note this is in unit of tile, need multiple tile size to get the index
             const auto [sorted_tile_id, intermediate_tile_id] =
