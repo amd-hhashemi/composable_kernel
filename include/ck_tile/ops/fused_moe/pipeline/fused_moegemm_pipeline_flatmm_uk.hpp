@@ -380,10 +380,10 @@ struct FusedMoeGemmPipeline_FlatmmUk
             constexpr auto REPEATS = BlockShape::Repeat_N0 * BlockShape::Repeat_M0;
             for(auto i = 0; i < REPEATS; i++)
             {
-                acc_0.get_thread_buffer()[4 * i + 0] += acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 0];
-                acc_0.get_thread_buffer()[4 * i + 1] += acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 1];
-                acc_0.get_thread_buffer()[4 * i + 2] += acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 2];
-                acc_0.get_thread_buffer()[4 * i + 3] += acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 3];
+                acc_0.get_thread_buffer()[4 * i + 0] *= acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 0];
+                acc_0.get_thread_buffer()[4 * i + 1] *= acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 1];
+                acc_0.get_thread_buffer()[4 * i + 2] *= acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 2];
+                acc_0.get_thread_buffer()[4 * i + 3] *= acc_0_full.get_thread_buffer()[4 * (i + REPEATS) + 3];
             }
         }
         block_sync_lds();

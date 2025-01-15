@@ -157,7 +157,7 @@ void reference_fused_moe(
             {
                 AccDataType tmp;
                 Activation{}(tmp, acc_0(0, i_n));
-                y(0, i_n) = tmp + acc_0(0, i_n + intermediate_size_1); // TODO: elementwise mul
+                y(0, i_n) = tmp * acc_0(0, i_n + intermediate_size_1); // TODO: elementwise mul
             }
         }
 
