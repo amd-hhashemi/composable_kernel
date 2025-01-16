@@ -209,9 +209,9 @@ struct FusedMoeGemmPipeline_FlatmmUk
                        threadIdx.x % (BlockShape::Block_K0 / kAlignmentA) * kAlignmentA;
             },
             number<row_ids_a.size()>{});
-        if (expert_first_token >= kargs.num_tokens) 
+        if (expert_first_token&0xffffff >= kargs.num_tokens) 
             return;
-        // printf("tid %d %d\n", blockIdx.x, threadIdx.x);
+        // printf("tid %d %d, first %d\n", blockIdx.x, threadIdx.x,expert_first_token&0xffffff);
         // for (int i = 0; i < row_ids_a.size(); i++) {
         //     printf("%d bid %d tid %d rowid %d\n", i, blockIdx.x, threadIdx.x, row_ids_a[i]);
         // }
