@@ -63,7 +63,8 @@ struct buffer_load;
 // TODO: strict aliasing rule seems fail when reinterpret_cast between vector type
 // (exp_vector_type(xxx))
 
-union BR {
+union BR
+{
     int32x4_t res;
     __amdgpu_buffer_rsrc_t opaque;
 };
@@ -83,7 +84,8 @@ struct buffer_load<16, pre_nop>
         static_assert(sizeof(T) == 16);
         using mbuf_t = typename impl::buffer_load_trait<16, T>::payload_t;
         const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b128(br.opaque, v_offset, s_offset, 0);
+        reinterpret_cast<mbuf_t&>(value) =
+            __builtin_amdgcn_raw_buffer_load_b128(br.opaque, v_offset, s_offset, 0);
     }
 };
 
@@ -102,7 +104,8 @@ struct buffer_load<8, pre_nop>
         static_assert(sizeof(T) == 8);
         using mbuf_t = typename impl::buffer_load_trait<8, T>::payload_t;
         const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b64(br.opaque, v_offset, s_offset, 0);
+        reinterpret_cast<mbuf_t&>(value) =
+            __builtin_amdgcn_raw_buffer_load_b64(br.opaque, v_offset, s_offset, 0);
     }
 };
 
@@ -121,7 +124,8 @@ struct buffer_load<4, pre_nop>
         static_assert(sizeof(T) == 4);
         using mbuf_t = typename impl::buffer_load_trait<4, T>::payload_t;
         const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b32(br.opaque, v_offset, s_offset, 0);
+        reinterpret_cast<mbuf_t&>(value) =
+            __builtin_amdgcn_raw_buffer_load_b32(br.opaque, v_offset, s_offset, 0);
     }
 };
 
@@ -140,7 +144,8 @@ struct buffer_load<2, pre_nop>
         static_assert(sizeof(T) == 4); // subdword is buggy, use dword buf and convert manually
         using mbuf_t = typename impl::buffer_load_trait<2, T>::payload_t;
         const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b16(br.opaque, v_offset, s_offset, 0);
+        reinterpret_cast<mbuf_t&>(value) =
+            __builtin_amdgcn_raw_buffer_load_b16(br.opaque, v_offset, s_offset, 0);
     }
 };
 
@@ -159,12 +164,14 @@ struct buffer_load<1, pre_nop>
         static_assert(sizeof(T) == 4);
         using mbuf_t = typename impl::buffer_load_trait<1, T>::payload_t;
         const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b16(br.opaque, v_offset, s_offset, 0);
+        reinterpret_cast<mbuf_t&>(value) =
+            __builtin_amdgcn_raw_buffer_load_b16(br.opaque, v_offset, s_offset, 0);
     }
 };
 
 template <index_t bytes, bool pre_nop = false>
-struct buffer_load_if {
+struct buffer_load_if
+{
     template <typename T>
     CK_TILE_DEVICE void operator()(T& value,
                                    int32x4_t res /*buffer resource*/,
@@ -175,14 +182,10 @@ struct buffer_load_if {
                                    bool_constant<pre_nop> = {})
     {
         static_assert(sizeof(T) == 16);
-        if LIKELY(1 <= flag) {
-            buffer_load<bytes, pre_nop>{}(value,
-                                             res,
-                                             v_offset,
-                                             s_offset,
-                                             i_offset,
-                                             flag,
-                                             bool_constant<pre_nop>{});
+        if LIKELY(1 <= flag)
+        {
+            buffer_load<bytes, pre_nop>{}(
+                value, res, v_offset, s_offset, i_offset, flag, bool_constant<pre_nop>{});
         }
     }
 };
@@ -205,7 +208,8 @@ struct buffer_store<16>
         static_assert(sizeof(T) == 16);
         using mbuf_t = fp32x4_t;
         const BR br{res};
-        __builtin_amdgcn_raw_buffer_store_b128(static_cast<mbuf_t>(value), br.opaque, v_offset, s_offset, 0);
+        __builtin_amdgcn_raw_buffer_store_b128(
+            static_cast<mbuf_t>(value), br.opaque, v_offset, s_offset, 0);
     }
 };
 
@@ -223,7 +227,8 @@ struct buffer_store<8>
         static_assert(sizeof(T) == 8);
         using mbuf_t = fp32x2_t;
         const BR br{res};
-        __builtin_amdgcn_raw_buffer_store_b64(__builtin_bit_cast(mbuf_t, value), br.opaque, v_offset, s_offset, 0);
+        __builtin_amdgcn_raw_buffer_store_b64(
+            __builtin_bit_cast(mbuf_t, value), br.opaque, v_offset, s_offset, 0);
     }
 };
 
@@ -241,7 +246,8 @@ struct buffer_store<4>
         static_assert(sizeof(T) == 4);
         using mbuf_t = float;
         const BR br{res};
-        __builtin_amdgcn_raw_buffer_store_b32(static_cast<mbuf_t>(value), br.opaque, v_offset, s_offset, 0);
+        __builtin_amdgcn_raw_buffer_store_b32(
+            static_cast<mbuf_t>(value), br.opaque, v_offset, s_offset, 0);
     }
 };
 
@@ -259,7 +265,8 @@ struct buffer_store<2>
         static_assert(sizeof(T) == 2);
         using mbuf_t = short;
         const BR br{res};
-        __builtin_amdgcn_raw_buffer_store_b16(__builtin_bit_cast(mbuf_t, value), br.opaque, v_offset, s_offset, 0);
+        __builtin_amdgcn_raw_buffer_store_b16(
+            __builtin_bit_cast(mbuf_t, value), br.opaque, v_offset, s_offset, 0);
     }
 };
 
@@ -277,7 +284,8 @@ struct buffer_store<1>
         static_assert(sizeof(T) == 4);
         using mbuf_t = float;
         const BR br{res};
-        __builtin_amdgcn_raw_buffer_store_b8(static_cast<mbuf_t>(value), br.opaque, v_offset, s_offset, 0);
+        __builtin_amdgcn_raw_buffer_store_b8(
+            static_cast<mbuf_t>(value), br.opaque, v_offset, s_offset, 0);
     }
 };
 
@@ -292,12 +300,9 @@ struct buffer_store_if
                                    index_t i_offset /*max 0xFFF*/,
                                    index_t flag = 1)
     {
-        if LIKELY(1 <= flag) {
-        buffer_store<bytes>{}(value,
-                                     res,
-                                     v_offset,
-                                     s_offset,
-                                    i_offset);
+        if LIKELY(1 <= flag)
+        {
+            buffer_store<bytes>{}(value, res, v_offset, s_offset, i_offset);
         }
     }
 };
