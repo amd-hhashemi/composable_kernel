@@ -956,6 +956,11 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
                               << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
                               << std::endl;
                 }
+
+                std::cout << "@EminDebug (gridwise_gemm_sk): Arg M value is not a multiple of MPerBlock! M: " << karg.M << " "
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
+
                 return false;
             }
         }
@@ -963,7 +968,8 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
         if constexpr(!(GemmSpec == tensor_operation::device::GemmSpecialization::NPadding ||
                        GemmSpec == tensor_operation::device::GemmSpecialization::MNPadding ||
                        GemmSpec == tensor_operation::device::GemmSpecialization::NKPadding ||
-                       GemmSpec == tensor_operation::device::GemmSpecialization::MNKPadding))
+                       GemmSpec == tensor_operation::device::GemmSpecialization::MNKPadding) &&
+                     (is_same<tensor_layout::gemm::RowMajor, BLayout>::value))
         {
             if(!(karg.N % NPerBlock == 0))
             {
@@ -973,6 +979,11 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
                               << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
                               << std::endl;
                 }
+
+                std::cout << "@EminDebug (gridwise_gemm_sk): Arg N value is not a multiple of NPerBlock! N: " << karg.N << " "
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
+
                 return false;
             }
         }
@@ -992,6 +1003,11 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
                               << karg.K << " " << __FILE__ << ":" << __LINE__
                               << ", in function: " << __func__ << std::endl;
                 }
+
+                std::cout << "@EminDebug (gridwise_gemm_sk): Arg N value is not a multiple of NPerBlock! N: " << karg.N << " "
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
+
                 return false;
             }
         }
@@ -1015,6 +1031,10 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
                               << ABlockTransferSrcScalarPerVector << " )! " << __FILE__ << ":"
                               << __LINE__ << ", in function: " << __func__ << std::endl;
                 }
+                std::cout << "@EminDebug (gridwise_gemm_sk): Arg K (" << karg.K
+                              << ") value is not a multiple of ABlockTransferSrcScalarPerVector ("
+                              << ABlockTransferSrcScalarPerVector << " )! " << __FILE__ << ":"
+                              << __LINE__ << ", in function: " << __func__ << std::endl;
                 return false;
             }
         }
@@ -1029,6 +1049,12 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
                               << ABlockTransferSrcScalarPerVector << " )! " << __FILE__ << ":"
                               << __LINE__ << ", in function: " << __func__ << std::endl;
                 }
+
+                std::cout << "@EminDebug (gridwise_gemm_sk): Arg M (" << karg.M
+                              << ") value is not a multiple of ABlockTransferSrcScalarPerVector ("
+                              << ABlockTransferSrcScalarPerVector << " )! " << __FILE__ << ":"
+                              << __LINE__ << ", in function: " << __func__ << std::endl;
+
                 return false;
             }
         }
@@ -1044,6 +1070,12 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
                               << BBlockTransferSrcScalarPerVector << " )! " << __FILE__ << ":"
                               << __LINE__ << ", in function: " << __func__ << std::endl;
                 }
+
+                std::cout << "@EminDebug (gridwise_gemm_sk): Arg N (" << karg.N
+                              << ") value is not a multiple of BBlockTransferSrcScalarPerVector ("
+                              << BBlockTransferSrcScalarPerVector << " )! " << __FILE__ << ":"
+                              << __LINE__ << ", in function: " << __func__ << std::endl;
+
                 return false;
             }
         }
@@ -1058,6 +1090,12 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
                               << BBlockTransferSrcScalarPerVector << " )! " << __FILE__ << ":"
                               << __LINE__ << ", in function: " << __func__ << std::endl;
                 }
+
+                std::cout << "@EminDebug (gridwise_gemm_sk): Arg K (" << karg.K
+                              << ") value is not a multiple of BBlockTransferSrcScalarPerVector ("
+                              << BBlockTransferSrcScalarPerVector << " )! " << __FILE__ << ":"
+                              << __LINE__ << ", in function: " << __func__ << std::endl;
+
                 return false;
             }
         }
@@ -1075,6 +1113,14 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
                               << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
                               << std::endl;
                 }
+
+                std::cout << "@EminDebug (gridwise_gemm_sk): Arg N (" << karg.N
+                              << ") value is not a multiple of "
+                                 "CShuffleBlockTransferScalarPerVector_NPerBlock ("
+                              << CShuffleBlockTransferScalarPerVector_NPerBlock << " )! "
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
+
                 return false;
             }
         }
@@ -1091,18 +1137,30 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
                               << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
                               << std::endl;
                 }
+                std::cout << "@EminDebug (gridwise_gemm_sk): Arg M (" << karg.M
+                              << ") value is not a multiple of "
+                                 "CShuffleBlockTransferScalarPerVector_NPerBlock ("
+                              << CShuffleBlockTransferScalarPerVector_NPerBlock << " )! "
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
                 return false;
             }
         }
 
         if constexpr(is_same<remove_cvref_t<CDataType>, bhalf_t>::value)
-        {
+        {   
+            // Following Should be removed
             if(ck::EnvIsEnabled(CK_ENV(CK_LOGGING)))
             {
                 std::cout << " Grid size: " << karg.Grid_size << " > 1 is not support yet"
                           << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
                           << std::endl;
             }
+
+            std::cout << " @EminDebug (gridwise_gemm_sk): Grid size: " << karg.Grid_size << " > 1 is not support yet"
+                          << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                          << std::endl;
+
         }
 
         // check gridwise gemm pipeline
@@ -1112,6 +1170,9 @@ struct GridwiseGemm_xdl_cshuffle_streamk_v3
         {
             if(num_k_loop <= BlockwiseGemmPipe::PrefetchStages)
             {
+                std::cout << " @EminDebug (gridwise_gemm_sk): Grid size: " 
+                          << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                          << std::endl;
                 return false;
             }
         }

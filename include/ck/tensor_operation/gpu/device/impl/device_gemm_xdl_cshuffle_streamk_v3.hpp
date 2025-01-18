@@ -467,11 +467,17 @@ struct DeviceGemm_Xdl_CShuffle_Streamk_V3 : public DeviceGemm_Streamk_V2<ALayout
     {
         if(!ck::is_xdl_supported())
         {
+            std::cout << "@EminHari BugFix device_gemm IsSupportedArgument Case1"
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
             return false;
         }
         if(!is_bf16_atomic_supported() && std::is_same_v<CDataType, ck::bhalf_t> &&
            arg.Streamk_sel > 0)
         {
+            std::cout << "@EminHari BugFix device_gemm IsSupportedArgument Case2" 
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
             return false;
         }
         if((arg.K % AK1 != 0 || arg.K % BK1 != 0) && !(GemmSpec == GemmSpecialization::MKPadding ||
@@ -479,8 +485,15 @@ struct DeviceGemm_Xdl_CShuffle_Streamk_V3 : public DeviceGemm_Streamk_V2<ALayout
                                                        GemmSpec == GemmSpecialization::MNKPadding ||
                                                        GemmSpec == GemmSpecialization::KPadding))
         {
+            std::cout << "@EminHari BugFix device_gemm IsSupportedArgument Case3" 
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
             return false;
         }
+
+        std::cout << "@EminHari BugFix device_gemm IsSupportedArgument Validity Passed" 
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
 
         return GridwiseGemm::CheckValidity(arg);
     }
@@ -762,7 +775,7 @@ struct DeviceGemm_Xdl_CShuffle_Streamk_V3 : public DeviceGemm_Streamk_V2<ALayout
             {BlockGemmPipelineVersion::v5, "v5"}};
 
         // clang-format off
-        str << "DeviceGemmXdlUniversal"
+        str << "DeviceGemmXdlUniversal_StreamK"
             << "<"
             << getGemmSpecializationString(GemmSpec) << ", "
             << std::string(ALayout::name)[0]

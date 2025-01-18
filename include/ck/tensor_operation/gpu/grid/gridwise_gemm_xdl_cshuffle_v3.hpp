@@ -1143,6 +1143,13 @@ struct GridwiseGemm_xdl_cshuffle_v3
                               << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
                               << std::endl;
                 }
+
+                    std::cout << "@EminDebug (gridwise_gemm_sk): Arg N (" << karg.N
+                              << ") value is not a multiple of "
+                                 "CShuffleBlockTransferScalarPerVector_NPerBlock ("
+                              << CShuffleBlockTransferScalarPerVector_NPerBlock << " )! "
+                              << __FILE__ << ":" << __LINE__ << ", in function: " << __func__
+                              << std::endl;
                 return false;
             }
         }
