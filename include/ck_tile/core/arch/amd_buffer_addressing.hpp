@@ -12,7 +12,14 @@
 #include "ck_tile/core/utility/bit_cast.hpp"
 #include "ck_tile/core/utility/functional.hpp"
 
+// This attribute gives a hint to the compiler that a branch is likely to be taken.
+// Then, the compiler should remove if possible the associated s_cbranch_execz branch that would
+// have been generated.
+#if __cplusplus >= 202002L
+#define LIKELY(x) (x) [[likely]]
+#else
 #define LIKELY(x) (__builtin_expect(!!(x), 1))
+#endif
 
 namespace ck_tile {
 
@@ -63,11 +70,12 @@ struct buffer_load;
 // TODO: strict aliasing rule seems fail when reinterpret_cast between vector type
 // (exp_vector_type(xxx))
 
-union BR
+CK_TILE_DEVICE __amdgpu_buffer_rsrc_t cast_to_amdgpu_buffer_rsrc_t(int32x4_t res)
 {
-    int32x4_t res;
-    __amdgpu_buffer_rsrc_t opaque;
-};
+    __amdgpu_buffer_rsrc_t as_rsrc = __builtin_bit_cast(__amdgpu_buffer_rsrc_t, res);
+    static_assert(sizeof(res) == sizeof(as_rsrc) && "Size of buffer resource should match");
+    return as_rsrc;
+}
 
 template <bool pre_nop>
 struct buffer_load<16, pre_nop>
@@ -82,10 +90,9 @@ struct buffer_load<16, pre_nop>
                                    bool_constant<pre_nop> = {})
     {
         static_assert(sizeof(T) == 16);
-        using mbuf_t = typename impl::buffer_load_trait<16, T>::payload_t;
-        const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) =
-            __builtin_amdgcn_raw_buffer_load_b128(br.opaque, v_offset, s_offset, 0);
+        using mbuf_t                     = typename impl::buffer_load_trait<16, T>::payload_t;
+        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b128(
+            cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
@@ -102,10 +109,9 @@ struct buffer_load<8, pre_nop>
                                    bool_constant<pre_nop> = {})
     {
         static_assert(sizeof(T) == 8);
-        using mbuf_t = typename impl::buffer_load_trait<8, T>::payload_t;
-        const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) =
-            __builtin_amdgcn_raw_buffer_load_b64(br.opaque, v_offset, s_offset, 0);
+        using mbuf_t                     = typename impl::buffer_load_trait<8, T>::payload_t;
+        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b64(
+            cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
@@ -122,10 +128,9 @@ struct buffer_load<4, pre_nop>
                                    bool_constant<pre_nop> = {})
     {
         static_assert(sizeof(T) == 4);
-        using mbuf_t = typename impl::buffer_load_trait<4, T>::payload_t;
-        const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) =
-            __builtin_amdgcn_raw_buffer_load_b32(br.opaque, v_offset, s_offset, 0);
+        using mbuf_t                     = typename impl::buffer_load_trait<4, T>::payload_t;
+        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b32(
+            cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
@@ -142,10 +147,9 @@ struct buffer_load<2, pre_nop>
                                    bool_constant<pre_nop> = {})
     {
         static_assert(sizeof(T) == 4); // subdword is buggy, use dword buf and convert manually
-        using mbuf_t = typename impl::buffer_load_trait<2, T>::payload_t;
-        const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) =
-            __builtin_amdgcn_raw_buffer_load_b16(br.opaque, v_offset, s_offset, 0);
+        using mbuf_t                     = typename impl::buffer_load_trait<2, T>::payload_t;
+        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b16(
+            cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
@@ -162,10 +166,9 @@ struct buffer_load<1, pre_nop>
                                    bool_constant<pre_nop> = {})
     {
         static_assert(sizeof(T) == 4);
-        using mbuf_t = typename impl::buffer_load_trait<1, T>::payload_t;
-        const BR br{res};
-        reinterpret_cast<mbuf_t&>(value) =
-            __builtin_amdgcn_raw_buffer_load_b16(br.opaque, v_offset, s_offset, 0);
+        using mbuf_t                     = typename impl::buffer_load_trait<1, T>::payload_t;
+        reinterpret_cast<mbuf_t&>(value) = __builtin_amdgcn_raw_buffer_load_b16(
+            cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
@@ -207,9 +210,8 @@ struct buffer_store<16>
     {
         static_assert(sizeof(T) == 16);
         using mbuf_t = fp32x4_t;
-        const BR br{res};
         __builtin_amdgcn_raw_buffer_store_b128(
-            static_cast<mbuf_t>(value), br.opaque, v_offset, s_offset, 0);
+            bit_cast<mbuf_t>(value), cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
@@ -226,9 +228,8 @@ struct buffer_store<8>
     {
         static_assert(sizeof(T) == 8);
         using mbuf_t = fp32x2_t;
-        const BR br{res};
         __builtin_amdgcn_raw_buffer_store_b64(
-            __builtin_bit_cast(mbuf_t, value), br.opaque, v_offset, s_offset, 0);
+            bit_cast<mbuf_t>(value), cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
@@ -245,9 +246,8 @@ struct buffer_store<4>
     {
         static_assert(sizeof(T) == 4);
         using mbuf_t = float;
-        const BR br{res};
         __builtin_amdgcn_raw_buffer_store_b32(
-            static_cast<mbuf_t>(value), br.opaque, v_offset, s_offset, 0);
+            bit_cast<mbuf_t>(value), cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
@@ -264,9 +264,8 @@ struct buffer_store<2>
     {
         static_assert(sizeof(T) == 2);
         using mbuf_t = short;
-        const BR br{res};
         __builtin_amdgcn_raw_buffer_store_b16(
-            __builtin_bit_cast(mbuf_t, value), br.opaque, v_offset, s_offset, 0);
+            bit_cast<mbuf_t>(value), cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
@@ -283,9 +282,8 @@ struct buffer_store<1>
     {
         static_assert(sizeof(T) == 4);
         using mbuf_t = float;
-        const BR br{res};
         __builtin_amdgcn_raw_buffer_store_b8(
-            static_cast<mbuf_t>(value), br.opaque, v_offset, s_offset, 0);
+            bit_cast<mbuf_t>(value), cast_to_amdgpu_buffer_rsrc_t(res), v_offset, s_offset, 0);
     }
 };
 
