@@ -72,8 +72,9 @@ struct buffer_load;
 
 CK_TILE_DEVICE __amdgpu_buffer_rsrc_t cast_to_amdgpu_buffer_rsrc_t(int32x4_t res)
 {
-    __amdgpu_buffer_rsrc_t as_rsrc = __builtin_bit_cast(__amdgpu_buffer_rsrc_t, res);
+    __amdgpu_buffer_rsrc_t as_rsrc;
     static_assert(sizeof(res) == sizeof(as_rsrc) && "Size of buffer resource should match");
+    memcpy(&as_rsrc, &res, sizeof(res));
     return as_rsrc;
 }
 
