@@ -11,6 +11,7 @@ namespace ck_tile {
 struct BlockFmhaPipelineQRKSVSAsyncDefaultPolicy
     : BlockFmhaPipelineQXKSVSCustomPolicy</* QLoadOnce = */ true,
                                           /* AsyncCopy = */ true,
+                                          /* NumPrefetchK = */ 2,
                                           /* NumPrefetchV = */ 2>
 {
     template <typename Problem>
@@ -60,20 +61,16 @@ struct BlockFmhaPipelineQRKSVSAsyncDefaultPolicy
     template <typename Problem>
     CK_TILE_HOST_DEVICE static constexpr auto GetQKBlockGemm()
     {
-        constexpr index_t BlockGemmK = (KLoadOnce && Problem::BlockFmhaShape::kQKHeaddim ==
-                                                         Problem::BlockFmhaShape::kSubQKHeaddim)
-                                           ? Problem::BlockFmhaShape::kSubQKHeaddim
-                                           : Problem::BlockFmhaShape::kK0;
-
-        using GemmProblem = BlockGemmProblem<
-            typename Problem::QDataType,
-            typename Problem::KDataType,
-            typename Problem::SaccDataType,
-            Problem::kNumGemm0Warps * get_warp_size(),
-            TileGemmShape<
-                sequence<Problem::BlockFmhaShape::kM0, Problem::BlockFmhaShape::kN0, BlockGemmK>,
-                typename Problem::BlockFmhaShape::Gemm0BlockWarps,
-                typename Problem::BlockFmhaShape::Gemm0WarpTile>>;
+        using GemmProblem =
+            BlockGemmProblem<typename Problem::QDataType,
+                             typename Problem::KDataType,
+                             typename Problem::SaccDataType,
+                             Problem::kNumGemm0Warps * get_warp_size(),
+                             TileGemmShape<sequence<Problem::BlockFmhaShape::kM0,
+                                                    Problem::BlockFmhaShape::kN0,
+                                                    Problem::BlockFmhaShape::kK0>,
+                                           typename Problem::BlockFmhaShape::Gemm0BlockWarps,
+                                           typename Problem::BlockFmhaShape::Gemm0WarpTile>>;
 
         constexpr auto warp_gemm = []() {
             constexpr index_t WarpGemmM = Problem::BlockFmhaShape::Gemm0WarpTile::at(number<0>{});
