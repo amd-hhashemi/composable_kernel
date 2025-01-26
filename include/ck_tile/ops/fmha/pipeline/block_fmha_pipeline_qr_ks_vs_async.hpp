@@ -326,6 +326,8 @@ struct BlockFmhaPipelineQRKSVSAsync
             clear_tile(s_acc); // initialize C
 
             static_for<0, k0_loops - 1, 1>{}([&](auto i_k0) {
+                __builtin_amdgcn_sched_barrier(0);
+
                 if constexpr(i_k0 > 0 && i_k0 < k0_loops - 1)
                 {
                     if constexpr(i_k0 % 2 == 1)
@@ -464,10 +466,8 @@ struct BlockFmhaPipelineQRKSVSAsync
             block_tile_reduce_sync(m_local, f_max, bool_constant<false>{});
 
             const auto m_old = m; // m{j-1}
-            tile_elementwise_inout([](auto& e0, auto e1, auto e2) { e0 = max(e1, e2); },
-                                   m,
-                                   m_old,
-                                   m_local); // m{j}
+            tile_elementwise_inout(
+                [](auto& e0, auto e1, auto e2) { e0 = max(e1, e2); }, m, m_old, m_local); // m{j}
 
             auto p_compute = make_static_distributed_tensor<SMPLComputeDataType>(
                 s.get_tile_distribution()); // Pcompute{j}
