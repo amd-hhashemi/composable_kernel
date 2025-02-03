@@ -1921,8 +1921,7 @@ inline __host__ __device__ float32_t type_convert<float32_t, bf6x32_t>(bf6x32_t 
 #endif
 }
 
-template <typename Y, typename X, std::size_t NumElems>
->>>>>>> composable_kernel-internal/develop
+template <typename Y, typename X, size_t NumElems>
 inline __host__ __device__ void array_convert(std::array<Y, NumElems>& y,
                                               const std::array<X, NumElems>& x)
 {
